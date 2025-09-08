@@ -103,7 +103,7 @@
             background-color: #4a6cf7;
             color: white;
             padding: 15px;
-            text-align: left;
+            text-align: center; /* Changed from left to center */
             font-weight: 600;
             position: sticky;
             top: 0;
@@ -114,6 +114,7 @@
             padding: 15px;
             border-bottom: 1px solid #ddd;
             font-size: 14px;
+            text-align: center; /* Added center alignment for all table cells */
         }
         
         .data-table tr:nth-child(even) {
@@ -451,14 +452,13 @@
                     <th>Report Date</th>
                     <th>Total Workers</th>
                     <th>Total Accidents</th>
-                    <th>Submitted By</th>
                     <th>Date Created</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
                 <tr>
-                    <td colspan="9" class="loading">Loading reports...</td>
+                    <td colspan="8" class="loading">Loading reports...</td>
                 </tr>
             </tbody>
         </table>
@@ -545,7 +545,7 @@
                 })
                 .catch((error) => {
                     console.error('Error loading reports: ', error);
-                    tableBody.innerHTML = '<tr><td colspan="9">Error loading reports. Please try again.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="8">Error loading reports. Please try again.</td></tr>';
                 });
         }
 
@@ -555,7 +555,7 @@
             tableBody.innerHTML = '';
             
             if (reports.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9">No reports found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8">No reports found.</td></tr>';
                 return;
             }
             
@@ -576,7 +576,6 @@
                     <td>${report.reportDate || 'N/A'}</td>
                     <td>${report.totalWorkers || '0'}</td>
                     <td>${totalAccidents}</td>
-                    <td>${report.createdBy || 'Unknown'}</td>
                     <td>${report.createdAt ? new Date(report.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
                     <td>
                         <div class="button-container">
