@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - User Management System</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            width: 100%;
+            max-width: 1200px;
+            background: #4a6cf7;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        
+        .dashboard-container {
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            margin: 0 auto;
+            margin-bottom: 20px;
+        }
+        
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .welcome-section h2 {
+            color: #4a6cf7;
+            margin-bottom: 10px;
+        }
+        
+        .user-email {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card h3 {
+            color: #4a6cf7;
+            margin-bottom: 10px;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .dashboard-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .action-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .action-card:hover {
+            border-color: #4a6cf7;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .action-card h3 {
+            color: #4a6cf7;
+            margin-bottom: 15px;
+        }
+        
+        .action-card p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .action-btn {
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .action-btn:hover {
+            background: #3a5cd8;
+        }
+        
+        .recent-activity {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+        }
+        
+        .recent-activity h3 {
+            color: #4a6cf7;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            background: #4a6cf7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-content p {
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .activity-time {
+            color: #888;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .stats-cards,
+            .dashboard-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>Dashboard - User Management System</h1>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+    
+    <div class="dashboard-container">
+        <div class="welcome-section">
+            <h2>Welcome to Your Dashboard</h2>
+            <div class="user-email" id="userEmailDisplay">Logged in as: </div>
+        </div>
+        
+        <div class="stats-cards">
+            <div class="stat-card">
+                <h3>Total Users</h3>
+                <div class="stat-number">128</div>
+            </div>
+            <div class="stat-card">
+                <h3>Forms Submitted</h3>
+                <div class="stat-number">42</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Sessions</h3>
+                <div class="stat-number">5</div>
+            </div>
+        </div>
+        
+        <div class="dashboard-actions">
+            <div class="action-card">
+                <h3>User Information Form</h3>
+                <p>Fill out the user information form to create a new record</p>
+                <a href="form.html" class="action-btn">Go to Form</a>
+            </div>
+            <div class="action-card">
+                <h3>View Data Table</h3>
+                <p>View all submitted data in a structured table format</p>
+                <a href="data.html" class="action-btn">View Data</a>
+            </div>
+            <div class="action-card">
+                <h3>Account Settings</h3>
+                <p>Update your account information and preferences</p>
+                <a href="settings.html" class="action-btn">Settings</a>
+            </div>
+        </div>
+        
+        <div class="recent-activity">
+            <h3>Recent Activity</h3>
+            <div class="activity-item">
+                <div class="activity-icon">J</div>
+                <div class="activity-content">
+                    <p>John Doe submitted a form</p>
+                    <div class="activity-time">2 hours ago</div>
+                </div>
+            </div>
+            <div class="activity-item">
+                <div class="activity-icon">A</div>
+                <div class="activity-content">
+                    <p>Alice Johnson updated her profile</p>
+                    <div class="activity-time">5 hours ago</div>
+                </div>
+            </div>
+            <div class="activity-item">
+                <div class="activity-icon">M</div>
+                <div class="activity-content">
+                    <p>Michael Smith registered a new account</p>
+                    <div class="activity-time">Yesterday</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjMn3H2FKy87-m6VDq9AuPKt5CqMBy8K4",
+            authDomain: "lpkkp-ed2c7.firebaseapp.com",
+            projectId: "lpkkp-ed2c7",
+            storageBucket: "lpkkp-ed2c7.firebasestorage.app",
+            messagingSenderId: "627472582025",
+            appId: "1:627472582025:web:f9c96d7f5c02437e4d8d58",
+            measurementId: "G-6WM3EKJGMV"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Get DOM elements
+        const userEmailDisplay = document.getElementById('userEmailDisplay');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Check if user is logged in
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedEmail = localStorage.getItem('userEmail');
+            if (!savedEmail) {
+                // If no user is logged in, redirect to login page
+                window.location.href = 'login.html';
+            } else {
+                // Display the logged in user's email
+                userEmailDisplay.textContent += savedEmail;
+            }
+        });
+
+        // Logout function
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('userEmail');
+            // Redirect to login page
+            window.location.href = 'login.html';
+        });
+    </script>
+</body>
+</html>

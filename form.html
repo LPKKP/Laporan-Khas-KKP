@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borang Laporan Prestasi Bulanan KKP</title>
+    
+    <!-- External libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+        }
+        
+        .header {
+            width: 100%;
+            max-width: 900px;
+            background: #4a6cf7;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        /* New Notice Section Styles */
+        .notice-section {
+            margin-bottom: 18px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        
+        .notice-title {
+            background-color: #e9ecef;
+            padding: 8px;
+            margin: -12px -12px 10px -12px;
+            border-bottom: 1px solid #ddd;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .notice-title i {
+            margin-right: 8px;
+            color: #4a6cf7;
+        }
+        
+        .notice-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .notice-text {
+            font-size: 13px;
+            color: #495057;
+            flex: 1;
+        }
+        
+        .notice-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-notice {
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .btn-notice i {
+            margin-right: 5px;
+        }
+        
+        .btn-notice:hover {
+            background: #3a5cd8;
+        }
+        
+        .btn-notice.download {
+            background: #28a745;
+        }
+        
+        .btn-notice.download:hover {
+            background: #218838;
+        }
+        
+        .form-section {
+            margin-bottom: 18px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .section-title {
+            background-color: #f0f5ff;
+            padding: 8px;
+            margin: -12px -12px 10px -12px;
+            border-bottom: 1px solid #ddd;
+            font-weight: 600;
+            color: #4a6cf7;
+            font-size: 14px;
+        }
+        
+        /* Grid Layout for Form Rows */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .grid-header {
+            text-align: center;
+            font-weight: 600;
+            font-size: 11px;
+            color: #4a6cf7;
+            padding: 4px;
+        }
+        
+        .form-row {
+            display: contents;
+        }
+        
+        .form-row label {
+            padding: 6px 4px;
+            font-weight: 500;
+            color: #333;
+            font-size: 13px;
+        }
+        
+        .form-row input, 
+        .form-row select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            text-align: center;
+            transition: border 0.3s;
+        }
+        
+        .form-row input:focus, 
+        .form-row select:focus {
+            border-color: #4a6cf7;
+            outline: none;
+        }
+        
+        .sub-section-title {
+            font-weight: 600;
+            color: #2c5cc7;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px dashed #ccc;
+            font-size: 13px;
+            grid-column: 1 / span 3;
+        }
+        
+        .btn {
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-generate {
+            background: #4a6cf7;
+            width: 100%;
+        }
+        
+        .btn-generate:hover {
+            background: #3a5cd8;
+        }
+        
+        .btn-generate:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-download {
+            background: #28a745;
+            width: 100%;
+            margin-top: 12px;
+            display: none;
+        }
+        
+        .btn-download:hover {
+            background: #218838;
+        }
+        
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            margin-top: 15px;
+        }
+        
+        #result {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: 500;
+            min-height: 20px;
+        }
+        
+        .success-message {
+            color: #28a745;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        
+        .download-fallback {
+            margin-top: 15px;
+            text-align: center;
+            padding: 12px;
+            background-color: #fff3cd;
+            border-radius: 4px;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+            display: none;
+            font-size: 13px;
+        }
+        
+        .info-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .info-group .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .info-group .form-group label {
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        
+        .info-group .form-group input,
+        .info-group .form-group select {
+            flex: 1;
+            width: 100%;
+            text-align: left;
+            padding: 8px;
+            font-size: 13px;
+        }
+        
+    </style>
+</head>
+<body>
+    <!-- Hidden download link for guide PDF -->
+    <a id="guideDownloadLink" style="display: none;"></a>
+    
+    <!-- Header Section -->
+    <div class="header">
+        <h1>BAHAGIAN TEKNOLOGI MAKLUMAT DAN KOMUNIKASI &<br>KESELAMATAN KESIHATAN PEKERJAAN<br>LAPORAN PRESTASI KESELAMATAN & KESIHATAN PEKERJAAN (KKP)</h1>
+    </div>
+    
+    <!-- Main Form Container -->
+    <div class="container">
+        <form id="kkpForm">
+            
+            <!-- New Notice Section -->
+            <div class="notice-section">
+                <div class="notice-title">
+                    <i>📋</i> PANDUAN MENGISI LAPORAN
+                </div>
+                <div class="notice-content">
+                    <div class="notice-text">
+                        Sila rujuk panduan ini untuk maklumat tentang cara mengisi borang laporan dengan betul.
+                    </div>
+                    <div class="notice-buttons">
+                        <a href="#" class="btn-notice" id="viewGuideBtn">
+                            <i>👁️</i> Lihat Panduan
+                        </a>
+                        <!-- <a href="#" class="btn-notice download" id="downloadGuideBtn">
+                            <i>📥</i> Muat Turun
+                        </a> -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 1: Division Information -->
+            <div class="form-section">
+                <div class="section-title">MAKLUMAT BAHAGIAN/ZON/UNIT</div>
+                <div class="info-group">
+                    <div class="form-group">
+                        <label for="division">Bahagian/Zon/Unit:</label>
+                        <input type="text" id="division" name="division" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="quarter">Suku Pelaporan:</label>
+                        <select id="quarter" name="quarter" required>
+                            <option value="">-- Pilih Suku --</option>
+                            <option value="Suku 1">Suku 1</option>
+                            <option value="Suku 2">Suku 2</option>
+                            <option value="Suku 3">Suku 3</option>
+                            <option value="Suku 4">Suku 4</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reportDate">Tarikh Laporan:</label>
+                        <input type="date" id="reportDate" name="reportDate" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Statistics -->
+            <div class="form-section">
+                <div class="section-title">SEKSYEN A : STATISTIK</div>
+                <div class="form-grid">
+                    <div class="grid-header"></div>
+                    <div class="grid-header">BILANGAN KES</div>
+                    <div class="grid-header">BILANGAN TAHUN INI</div>
+                    
+                    <div class="form-row">
+                        <label for="totalWorkers">1. Jumlah Bilangan Pekerja:</label>
+                        <input type="number" id="totalWorkers" name="totalWorkers" min="0" value="0">
+                        <input type="number" id="totalWorkersYTD" name="totalWorkersYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="sickLeave">2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan:</label>
+                        <input type="number" id="sickLeave" name="sickLeave" min="0" value="0">
+                        <input type="number" id="sickLeaveYTD" name="sickLeaveYTD" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Accident Records -->
+            <div class="form-section">
+                <div class="section-title">SEKSYEN B : REKOD KES KEMALANGAN</div>
+                <div class="form-grid">
+                    <div class="grid-header"></div>
+                    <div class="grid-header">BILANGAN KES</div>
+                    <div class="grid-header">BILANGAN TAHUN INI</div>
+                    
+                    <!-- 1. Major Accident Cases -->
+                    <div class="form-row">
+                        <div class="sub-section-title">1. Kes Kemalangan Major (Cuti Sakit ≥ 5 Hari)</div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="deathCases">1.1 Kematian:</label>
+                        <input type="number" id="deathCases" name="deathCases" min="0" value="0">
+                        <input type="number" id="deathCasesYTD" name="deathCasesYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="severeAccidents">1.2 Kemalangan Parah (Cuti Sakit ≥ 5 Hari):</label>
+                        <input type="number" id="severeAccidents" name="severeAccidents" min="0" value="0">
+                        <input type="number" id="severeAccidentsYTD" name="severeAccidentsYTD" min="0" value="0">
+                    </div>
+                    
+                    <!-- 2. Minor Accident Cases -->
+                    <div class="form-row">
+                        <div class="sub-section-title">2. Kes Kemalangan Minor (Cuti Sakit < 5 Hari)</div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="medicalCases">2.1 Kes Rawatan Perubatan:</label>
+                        <input type="number" id="medicalCases" name="medicalCases" min="0" value="0">
+                        <input type="number" id="medicalCasesYTD" name="medicalCasesYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="firstAidCases">2.2 Kes Rawatan Kecil (First Aid):</label>
+                        <input type="number" id="firstAidCases" name="firstAidCases" min="0" value="0">
+                        <input type="number" id="firstAidCasesYTD" name="firstAidCasesYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="occupationalDisease">2.3 Penyakit Pekerjaan:</label>
+                        <input type="number" id="occupationalDisease" name="occupationalDisease" min="0" value="0">
+                        <input type="number" id="occupationalDiseaseYTD" name="occupationalDiseaseYTD" min="0" value="0">
+                    </div>
+                    
+                    <!-- 3. No Injury Accident Cases -->
+                    <div class="form-row">
+                        <div class="sub-section-title">3. Kes Kemalangan Tiada Kecederaan</div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="fireCases">3.1 Kebakaran:</label>
+                        <input type="number" id="fireCases" name="fireCases" min="0" value="0">
+                        <input type="number" id="fireCasesYTD" name="fireCasesYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="propertyDamage">3.2 Kerosakan Harta Benda:</label>
+                        <input type="number" id="propertyDamage" name="propertyDamage" min="0" value="0">
+                        <input type="number" id="propertyDamageYTD" name="propertyDamageYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="commutingAccidents">3.3 Kemalangan dalam Perjalanan:</label>
+                        <input type="number" id="commutingAccidents" name="commutingAccidents" min="0" value="0">
+                        <input type="number" id="commutingAccidentsYTD" name="commutingAccidentsYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="nearMiss">3.4 Kejadian Hampir (Near Miss):</label>
+                        <input type="number" id="nearMiss" name="nearMiss" min="0" value="0">
+                        <input type="number" id="nearMissYTD" name="nearMissYTD" min="0, 0, 0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Health-related Cases -->
+            <div class="form-section">
+                <div class="section-title">SEKSYEN C : REKOD KES BERKAITAN KESIHATAN</div>
+                <div class="form-grid">
+                    <div class="grid-header"></div>
+                    <div class="grid-header">BILANGAN KES</div>
+                    <div class="grid-header">BILANGAN TAHUN INI</div>
+                    
+                    <div class="form-row">
+                        <label for="infectiousDisease">1. Kes Penyakit Berjangkit:</label>
+                        <input type="number" id="infectiousDisease" name="infectiousDisease" min="0" value="0">
+                        <input type="number" id="infectiousDiseaseYTD" name="infectiousDiseaseYTD" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 5: OSH Programs -->
+            <div class="form-section">
+                <div class="section-title">SEKSYEN D : PROGRAM KKP</div>
+                <div class="form-grid">
+                    <div class="grid-header"></div>
+                    <div class="grid-header">BILANGAN</div>
+                    <div class="grid-header">BILANGAN TAHUN INI</div>
+                    
+                    <div class="form-row">
+                        <label for="meetings">1. Jumlah Mesyuarat KKP:</label>
+                        <input type="number" id="meetings" name="meetings" min="0" value="0">
+                        <input type="number" id="meetingsYTD" name="meetingsYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="trainings">2. Jumlah Latihan KKP:</label>
+                        <input type="number" id="trainings" name="trainings" min="0" value="0">
+                        <input type="number" id="trainingsYTD" name='trainingsYTD' min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="briefings">3. Jumlah Taklimat/Toolbox:</label>
+                        <input type="number" id="briefings" name="briefings" min="0" value="0">
+                        <input type="number" id="briefingsYTD" name="briefingsYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="inspections">4. Jumlah Pemeriksaan KKP (Pemeriksaan Dalaman & Luaran):</label>
+                        <input type="number" id="inspections" name="inspections" min="0" value="0">
+                        <input type="number" id="inspectionsYTD" name="inspectionsYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="uauc">5. Pelaporan Unsafe Act Unsafe Condition (UAUC):</label>
+                        <input type="number" id="uauc" name="uauc" min="0" value="0">
+                        <input type="number" id="uaucYTD" name="uaucYTD" min="0" value="0">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="otherActivities">6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP):</label>
+                        <input type="number" id="otherActivities" name="otherActivities" min="0" value="0">
+                        <input type="number" id="otherActivitiesYTD" name="otherActivitiesYTD" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Buttons -->
+            <div class="button-container">
+                <button type="submit" class="btn btn-generate" id="submitBtn">Jana Laporan PDF</button>
+                <button type="button" class="btn btn-download" id="downloadBtn">Muat Turun PDF</button>
+            </div>
+        </form>
+        
+        <!-- Result and fallback messages -->
+        <div id="result"></div>
+        <div class="download-fallback" id="downloadFallback">
+            Jika muat turun tidak bermula secara automatik, sila klik butang di atas.
+        </div>
+    </div>
+
+    <script>
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjMn3H2FKy87-m6VDq9AuPKt5CqMBy8K4",
+            authDomain: "lpkkp-ed2c7.firebaseapp.com",
+            projectId: "lpkkp-ed2c7",
+            storageBucket: "lpkkp-ed2c7.firebasestorage.app",
+            messagingSenderId: "627472582025",
+            appId: "1:627472582025:web:f9c96d7f5c02437e4d8d58",
+            measurementId: "G-6WM3EKJGMV"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Make jsPDF available globally
+        window.jsPDF = window.jspdf.jsPDF;
+        
+        // Store PDF data for later download
+        let pdfData = null;
+        let currentReportId = null;
+
+        // Function to handle form submission
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            // Disable submit button to prevent double submission
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Menjana dan Menyimpan...';
+            
+            // Collect all form data
+            const formData = collectFormData();
+            
+            try {
+                // Generate the PDF first
+                pdfData = generatePdf(formData);
+                
+                // Convert PDF to base64 for storage
+                const pdfBase64 = pdfData.output('datauristring');
+                
+                // Add timestamp, user info, and PDF data
+                const reportData = {
+                    ...formData,
+                    pdfData: pdfBase64, // Store the exact PDF
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdBy: localStorage.getItem('userEmail') || 'Unknown',
+                    status: 'submitted'
+                };
+                
+                // Save to Firestore
+                const docRef = await db.collection("kkpReports").add(reportData);
+                currentReportId = docRef.id;
+                
+                // Show the download button
+                document.getElementById('downloadBtn').style.display = 'block';
+                
+                // Try to download automatically
+                const downloadSuccess = tryDownload(pdfData);
+                
+                // Show appropriate message based on download success
+                showResultMessage(downloadSuccess, true);
+                
+            } catch (error) {
+                console.error("Error saving report: ", error);
+                showResultMessage(false, false);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Jana Laporan PDF';
+            }
+        }
+        
+        // Function to collect all form data
+        function collectFormData() {
+            return {
+                // Division information
+                division: document.getElementById('division').value,
+                quarter: document.getElementById('quarter').value,
+                reportDate: document.getElementById('reportDate').value,
+                
+                // Section A: Statistics
+                totalWorkers: document.getElementById('totalWorkers').value,
+                totalWorkersYTD: document.getElementById('totalWorkersYTD').value,
+                sickLeave: document.getElementById('sickLeave').value,
+                sickLeaveYTD: document.getElementById('sickLeaveYTD').value,
+                
+                // Section B: Accident Records
+                deathCases: document.getElementById('deathCases').value,
+                deathCasesYTD: document.getElementById('deathCasesYTD').value,
+                severeAccidents: document.getElementById('severeAccidents').value,
+                severeAccidentsYTD: document.getElementById('severeAccidentsYTD').value,
+                medicalCases: document.getElementById('medicalCases').value,
+                medicalCasesYTD: document.getElementById('medicalCasesYTD').value,
+                firstAidCases: document.getElementById('firstAidCases').value,
+                firstAidCasesYTD: document.getElementById('firstAidCasesYTD').value,
+                occupationalDisease: document.getElementById('occupationalDisease').value,
+                occupationalDiseaseYTD: document.getElementById('occupationalDiseaseYTD').value,
+                fireCases: document.getElementById('fireCases').value,
+                fireCasesYTD: document.getElementById('fireCasesYTD').value,
+                propertyDamage: document.getElementById('propertyDamage').value,
+                propertyDamageYTD: document.getElementById('propertyDamageYTD').value,
+                commutingAccidents: document.getElementById('commutingAccidents').value,
+                commutingAccidentsYTD: document.getElementById('commutingAccidentsYTD').value,
+                nearMiss: document.getElementById('nearMiss').value,
+                nearMissYTD: document.getElementById('nearMissYTD').value,
+                
+                // Section C: Health-related Cases
+                infectiousDisease: document.getElementById('infectiousDisease').value,
+                infectiousDiseaseYTD: document.getElementById('infectiousDiseaseYTD').value,
+                
+                // Section D: OSH Programs
+                meetings: document.getElementById('meetings').value,
+                meetingsYTD: document.getElementById('meetingsYTD').value,
+                trainings: document.getElementById('trainings').value,
+                trainingsYTD: document.getElementById('trainingsYTD').value,
+                briefings: document.getElementById('briefings').value,
+                briefingsYTD: document.getElementById('briefingsYTD').value,
+                inspections: document.getElementById('inspections').value,
+                inspectionsYTD: document.getElementById('inspectionsYTD').value,
+                uauc: document.getElementById('uauc').value,
+                uaucYTD: document.getElementById('uaucYTD').value,
+                otherActivities: document.getElementById('otherActivities').value,
+                otherActivitiesYTD: document.getElementById('otherActivitiesYTD').value
+            };
+        }
+        
+        // Function to show result message
+        function showResultMessage(downloadSuccess, saveSuccess) {
+            if (saveSuccess && downloadSuccess) {
+                document.getElementById('result').innerHTML = `
+                    <div class="success-message">
+                        ✓ Laporan berjaya disimpan, dijana dan dimuat turun!
+                    </div>
+                `;
+            } else if (saveSuccess) {
+                document.getElementById('result').innerHTML = `
+                    <div class="success-message">
+                        ✓ Laporan berjaya disimpan dan dijana! Sila gunakan butang untuk muat turun.
+                    </div>
+                `;
+                document.getElementById('downloadFallback').style.display = 'block';
+            } else {
+                document.getElementById('result').innerHTML = `
+                    <div class="success-message" style="color: #dc3545; border-left-color: #dc3545;">
+                        ✗ Ralat berlaku. Sila cuba lagi.
+                    </div>
+                `;
+            }
+        }
+        
+        // Function to handle manual download button click
+        function handleDownloadClick() {
+            if (pdfData) {
+                const date = new Date().toISOString().slice(0, 10);
+                pdfData.save(`Laporan_KKP_${date}.pdf`);
+            }
+        }
+        
+        // Function to generate the PDF document
+        function generatePdf(data) {
+            const doc = new jsPDF();
+            const date = new Date(data.reportDate).toLocaleDateString('ms-MY');
+            let yPosition = 15;
+
+            // Document Title - Reduced font size and spacing
+            yPosition = addDocumentTitle(doc, yPosition);
+            yPosition = addDivisionInfo(doc, data, date, yPosition);
+            yPosition = addSectionA(doc, data, yPosition);
+            yPosition = addSectionB(doc, data, yPosition);
+            
+            // Check if we need a new page for Section C and D
+            if (yPosition > 150) {
+                doc.addPage();
+                yPosition = 15;
+            }
+            
+            yPosition = addSectionC(doc, data, yPosition);
+            yPosition = addSectionD(doc, data, yPosition);
+            
+            return doc;
+        }
+        
+        // Function to add document title
+        function addDocumentTitle(doc, yPosition) {
+            doc.setFontSize(11.5);
+            doc.setTextColor(40, 40, 40);
+            doc.text("BAHAGIAN TEKNOLOGI MAKLUMAT DAN KOMUNIKASI &", 105, yPosition, { align: 'center' });
+            yPosition += 5;
+            doc.text("KESELAMATAN KESIHATAN PEKERJAAN", 105, yPosition, { align: 'center' });
+            yPosition += 5;
+            doc.text("LAPORAN PRESTASI KESELAMATAN & KESIHATAN PEKERJAAN (KKP)", 105, yPosition, { align: 'center' });
+            yPosition += 10;
+            
+            // Add separation line
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.3);
+            doc.line(15, yPosition, 195, yPosition);
+            yPosition += 12;
+            
+            return yPosition;
+        }
+        
+        // Function to add division information
+        function addDivisionInfo(doc, data, date, yPosition) {
+            doc.setFontSize(11.5);
+            doc.setTextColor(0, 0, 0);
+            doc.text("MAKLUMAT BAHAGIAN/ZON/UNIT", 15, yPosition);
+            yPosition += 6;
+            
+            // Create table for MAKLUMAT BAHAGIAN/ZON/UNIT
+            const infoData = [
+                ["Bahagian/Zon/Unit", data.division],
+                ["Suku Pelaporan", data.quarter],
+                ["Tarikh Laporan", date]
+            ];
+            
+            doc.autoTable({
+                startY: yPosition,
+                body: infoData,
+                theme: 'grid',
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 2,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 6
+                },
+                margin: { left: 15, right: 15 },
+                tableWidth: 'auto'
+            });
+            
+            return doc.lastAutoTable.finalY + 8;
+        }
+        
+        // Function to add Section A
+        function addSectionA(doc, data, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text("SEKSYEN A : STATISTIK", 15, yPosition);
+            yPosition += 6;
+            
+            // Create table for Section A
+            const sectionA = [
+                ["1. Jumlah Bilangan Pekerja", data.totalWorkers, data.totalWorkersYTD],
+                ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD]
+            ];
+            
+            doc.autoTable({
+                startY: yPosition,
+                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN TAHUN INI']],
+                body: sectionA,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [74, 108, 247],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 2,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 6
+                },
+                margin: { left: 15, right: 15 }
+            });
+            
+            return doc.lastAutoTable.finalY + 8;
+        }
+        
+        // Function to add Section B
+        function addSectionB(doc, data, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text("SEKSYEN B : REKOD KES KEMALANGAN", 15, yPosition);
+            yPosition += 6;
+            
+            // Create table for Section B
+            const sectionB = [
+                // Major accidents section
+                [{content: "1. Kes Kemalangan Major (Cuti Sakit >= 5 Hari)", colSpan: 3, styles: {fontStyle: 'bold', fillColor: [240, 245, 255], fontSize: 10}}],
+                ["   1.1 Kematian", data.deathCases, data.deathCasesYTD],
+                ["   1.2 Kemalangan Parah (Cuti Sakit >= 5 Hari)", data.severeAccidents, data.severeAccidentsYTD],
+                
+                // Minor accidents section
+                [{content: "2. Kes Kemalangan Minor (Cuti Sakit < 5 Hari)", colSpan: 3, styles: {fontStyle: 'bold', fillColor: [240, 245, 255], fontSize: 10}}],
+                ["   2.1 Kes Rawatan Perubatan", data.medicalCases, data.medicalCasesYTD],
+                ["   2.2 Kes Rawatan Kecil (First Aid)", data.firstAidCases, data.firstAidCasesYTD],
+                ["   2.3 Penyakit Pekerjaan", data.occupationalDisease, data.occupationalDiseaseYTD],
+                
+                // No injury accidents section
+                [{content: "3. Kes Kemalangan Tiada Kecederaan", colSpan: 3, styles: {fontStyle: 'bold', fillColor: [240, 245, 255], fontSize: 10}}],
+                ["   3.1 Kebakaran", data.fireCases, data.fireCasesYTD],
+                ["   3.2 Kerosakan Harta Benda", data.propertyDamage, data.propertyDamageYTD],
+                ["   3.3 Kemalangan dalam Perjalanan", data.commutingAccidents, data.commutingAccidentsYTD],
+                ["   3.4 Kejadian Hampir (Near Miss)", data.nearMiss, data.nearMissYTD]
+            ];
+            
+            doc.autoTable({
+                startY: yPosition,
+                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN TAHUN INI']],
+                body: sectionB,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [74, 108, 247],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 2,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 6
+                },
+                margin: { left: 15, right: 15 }
+            });
+            
+            return doc.lastAutoTable.finalY + 8;
+        }
+        
+        // Function to add Section C
+        function addSectionC(doc, data, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text("SEKSYEN C : REKOD KES BERKAITAN KESIHATAN", 15, yPosition);
+            yPosition += 6;
+            
+            // Create table for Section C
+            const sectionC = [
+                ["1. Kes Penyakit Berjangkit", data.infectiousDisease, data.infectiousDiseaseYTD]
+            ];
+            
+            doc.autoTable({
+                startY: yPosition,
+                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN TAHUN INI']],
+                body: sectionC,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [74, 108, 247],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 2,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 6
+                },
+                margin: { left: 15, right: 15 }
+            });
+            
+            return doc.lastAutoTable.finalY + 8;
+        }
+        
+        // Function to add Section D
+        function addSectionD(doc, data, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text("SEKSYEN D : PROGRAM KKP", 15, yPosition);
+            yPosition += 6;
+            
+            // Create table for Section D
+            const sectionD = [
+                ["1. Jumlah Mesyuarat KKP", data.meetings, data.meetingsYTD],
+                ["2. Jumlah Latihan KKP", data.trainings, data.trainingsYTD],
+                ["3. Jumlah Taklimat/Toolbox", data.briefings, data.briefingsYTD],
+                ["4. Jumlah Pemeriksaan KKP (Pemeriksaan Dalaman & Luaran)", data.inspections, data.inspectionsYTD],
+                ["5. Pelaporan Unsafe Act Unsafe Condition (UAUC)", data.uauc, data.uaucYTD],
+                ["6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP)", data.otherActivities, data.otherActivitiesYTD]
+            ];
+            
+            doc.autoTable({
+                startY: yPosition,
+                head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
+                body: sectionD,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [74, 108, 247],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 2,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 6
+                },
+                margin: { left: 15, right: 15 }
+            });
+            
+            return doc.lastAutoTable.finalY + 8;
+        }
+        
+        // Function to try automatic download
+        function tryDownload(pdfDoc) {
+            try {
+                const date = new Date().toISOString().slice(0, 10);
+                pdfDoc.save(`Laporan_KKP_${date}.pdf`);
+                return true;
+            } catch (error) {
+                console.error('Automatic download failed:', error);
+                return false;
+            }
+        }
+
+        // Function to view the PDF guide
+        function viewGuide() {
+            // Replace this URL with your actual PDF URL
+            window.open('PANDUAN BORANG LAPORAN PRESTASI BULANAN KKP OGOS 2025.pdf', '_blank');
+        }
+
+        // Function to download the PDF guide - UPDATED to use same method as data.html
+        function downloadGuide() {
+            try {
+                // Create a temporary link element
+                const link = document.getElementById('guideDownloadLink');
+                
+                // Set the PDF URL (replace with your actual guide PDF URL)
+                const pdfUrl = 'PANDUAN BORANG LAPORAN PRESTASI BULANAN KKP OGOS 2025.pdf';
+                
+                // Set link attributes
+                link.href = pdfUrl;
+                link.download = 'PANDUAN BORANG LAPORAN PRESTASI BULANAN KKP OGOS 2025.pdf';
+                
+                // Programmatically click the link to trigger download
+                link.click();
+            } catch (error) {
+                console.error('Error downloading guide:', error);
+                // Fallback: Open in new tab if download fails
+                window.open('PANDUAN BORANG LAPORAN PRESTASI BULANAN KKP OGOS 2025.pdf', '_blank');
+            }
+        }
+
+        // Set up event listeners when page loads
+        function initializePage() {
+            // Set default date to today
+            document.getElementById('reportDate').valueAsDate = new Date();
+            
+            // Add form submit handler
+            document.getElementById('kkpForm').addEventListener('submit', handleFormSubmit);
+            
+            // Add download button handler
+            document.getElementById('downloadBtn').addEventListener('click', handleDownloadClick);
+            
+            // Add guide button handlers
+            document.getElementById('viewGuideBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                viewGuide();
+            });
+            
+            document.getElementById('downloadGuideBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                downloadGuide();
+            });
+        }
+
+        // Initialize the page when it loads
+        window.onload = initializePage;
+    </script>
+</body>
+</html>

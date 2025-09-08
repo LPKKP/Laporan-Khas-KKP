@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Login System</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #4a6cf7;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .form-container {
+            padding: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        .input-group input:focus {
+            border-color: #4a6cf7;
+            outline: none;
+        }
+        
+        .btn {
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #3a5cd8;
+        }
+        
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            color: #d9534f;
+            font-weight: 500;
+            min-height: 24px;
+        }
+        
+        .success-message {
+            color: #28a745;
+        }
+        
+        .info {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .info a {
+            color: #4a6cf7;
+            text-decoration: none;
+        }
+        
+        .redirect-info {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #4a6cf7;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div class="container" id="loginPage">
+        <div class="header">
+            <h1>Welcome Back</h1>
+        </div>
+        <div class="form-container">
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="Enter your email">
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password">
+            </div>
+            <button class="btn" id="loginBtn">Login</button>
+            <div class="message" id="loginMessage"></div>
+            
+            <div class="redirect-info">
+                <p>After successful login, you will be redirected to index.html</p>
+            </div>
+            
+            <div class="info">
+                <p>Demo credentials: admin@example.com / password123</p>
+                <p>This is a demo system using Firebase Firestore</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase App Setup -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script>
+        // Firebase configuration - replace with your own config
+        const firebaseConfig = {
+          apiKey: "AIzaSyAjMn3H2FKy87-m6VDq9AuPKt5CqMBy8K4",
+          authDomain: "lpkkp-ed2c7.firebaseapp.com",
+          projectId: "lpkkp-ed2c7",
+          storageBucket: "lpkkp-ed2c7.firebasestorage.app",
+          messagingSenderId: "627472582025",
+          appId: "1:627472582025:web:09e2c7b7dc39942c4d8d58",
+          measurementId: "G-MFZTX9S6FE"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // DOM elements
+        const loginPage = document.getElementById('loginPage');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginMessage = document.getElementById('loginMessage');
+
+        // Login function
+        loginBtn.addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                loginMessage.textContent = 'Please enter both email and password';
+                return;
+            }
+            
+            loginMessage.textContent = 'Checking credentials...';
+            
+            // Check credentials against Firestore
+            db.collection('users').where('email', '==', email).get()
+                .then((querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        loginMessage.textContent = 'User not found';
+                        return;
+                    }
+                    
+                    let userFound = false;
+                    querySnapshot.forEach((doc) => {
+                        const user = doc.data();
+                        if (user.password === password) {
+                            userFound = true;
+                            // Successful login
+                            loginMessage.textContent = 'Login successful! Redirecting...';
+                            loginMessage.classList.add('success-message');
+                            
+                            // Store user email in localStorage for demo purposes
+                            localStorage.setItem('userEmail', email);
+                            
+                            // REDIRECT TO index.html after a short delay
+                            setTimeout(() => {
+                                window.location.href = 'index.html';
+                            }, 1500);
+                        }
+                    });
+                    
+                    if (!userFound) {
+                        loginMessage.textContent = 'Incorrect password';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error getting documents: ', error);
+                    loginMessage.textContent = 'Login error. Please try again.';
+                });
+        });
+        
+        // Check if user is already logged in (for demo purposes)
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedEmail = localStorage.getItem('userEmail');
+            if (savedEmail) {
+                // If user is already logged in, redirect to index.html
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>
