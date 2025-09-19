@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Login System</title>
+    <title>Login System Debug</title>
     <style>
         * {
             box-sizing: border-box;
@@ -120,34 +120,69 @@
             border-radius: 5px;
             border-left: 4px solid #4a6cf7;
         }
+        
+        .debug-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .debug-toggle {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .debug-toggle button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <!-- Login Page -->
     <div class="container" id="loginPage">
         <div class="header">
-            <h1>Welcome Back</h1>
+            <h1>Login Debugging</h1>
         </div>
         <div class="form-container">
             <div class="input-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" placeholder="Enter your email">
+                <input type="email" id="email" placeholder="Enter your email" value="admin@example.com">
             </div>
             <div class="input-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" placeholder="Enter your password">
+                <input type="password" id="password" placeholder="Enter your password" value="password123">
             </div>
             <button class="btn" id="loginBtn">Login</button>
             <div class="message" id="loginMessage"></div>
             
-<!--             <div class="redirect-info">
-                <p>After successful login, you will be redirected to index.html</p>
-            </div> -->
+            <div class="debug-toggle">
+                <button id="toggleDebug">Show Debug Info</button>
+            </div>
             
-<!--             <div class="info">
+            <div class="debug-info" id="debugInfo" style="display: none;">
+                <h3>Debug Information</h3>
+                <p><strong>Firebase Status:</strong> <span id="firebaseStatus">Checking...</span></p>
+                <p><strong>Query Details:</strong> <span id="queryDetails">Not executed yet</span></p>
+                <p><strong>User Data:</strong> <span id="userData">No data retrieved</span></p>
+                <p><strong>LocalStorage:</strong> <span id="localStorageStatus">Not set</span></p>
+            </div>
+            
+            <div class="redirect-info">
+                <p>After successful login, you will be redirected to index.html</p>
+            </div>
+            
+            <div class="info">
                 <p>Demo credentials: admin@example.com / password123</p>
                 <p>This is a demo system using Firebase Firestore</p>
-            </div> -->
+            </div>
         </div>
     </div>
 
@@ -156,7 +191,47 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
     <script>
-        // Firebase configuration - replace with your own config
+        // DOM elements
+        const loginPage = document.getElementById('loginPage');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginMessage = document.getElementById('loginMessage');
+        const toggleDebugBtn = document.getElementById('toggleDebug');
+        const debugInfo = document.getElementById('debugInfo');
+        const firebaseStatus = document.getElementById('firebaseStatus');
+        const queryDetails = document.getElementById('queryDetails');
+        const userData = document.getElementById('userData');
+        const localStorageStatus = document.getElementById('localStorageStatus');
+
+        // Toggle debug info
+        toggleDebugBtn.addEventListener('click', () => {
+            if (debugInfo.style.display === 'none') {
+                debugInfo.style.display = 'block';
+                toggleDebugBtn.textContent = 'Hide Debug Info';
+            } else {
+                debugInfo.style.display = 'none';
+                toggleDebugBtn.textContent = 'Show Debug Info';
+            }
+        });
+
+        // Update debug info
+        function updateDebugInfo(section, message) {
+            switch(section) {
+                case 'firebase':
+                    firebaseStatus.textContent = message;
+                    break;
+                case 'query':
+                    queryDetails.textContent = message;
+                    break;
+                case 'user':
+                    userData.textContent = message;
+                    break;
+                case 'storage':
+                    localStorageStatus.textContent = message;
+                    break;
+            }
+        }
+
+        // Firebase configuration
         const firebaseConfig = {
           apiKey: "AIzaSyAjMn3H2FKy87-m6VDq9AuPKt5CqMBy8K4",
           authDomain: "lpkkp-ed2c7.firebaseapp.com",
@@ -168,16 +243,34 @@
         };
 
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        let db;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            updateDebugInfo('firebase', 'Initialized successfully');
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            updateDebugInfo('firebase', `Error: ${error.message}`);
+            console.error('Firebase initialization error:', error);
+        }
 
-        // DOM elements
-        const loginPage = document.getElementById('loginPage');
-        const loginBtn = document.getElementById('loginBtn');
-        const loginMessage = document.getElementById('loginMessage');
+        // Check if user is already logged in
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedEmail = localStorage.getItem('userEmail');
+            updateDebugInfo('storage', savedEmail ? `Found: ${savedEmail}` : 'No user email found');
+            
+            if (savedEmail) {
+                // If user is already logged in, redirect to index.html
+                loginMessage.textContent = 'User already logged in, redirecting...';
+                loginMessage.classList.add('success-message');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+            }
+        });
 
         // Login function
-        loginBtn.addEventListener('click', () => {
+        loginBtn.addEventListener('click', async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
@@ -187,55 +280,55 @@
             }
             
             loginMessage.textContent = 'Checking credentials...';
+            loginMessage.classList.remove('success-message');
+            updateDebugInfo('query', `Querying for email: ${email}`);
             
-            // Check credentials against Firestore
-            db.collection('users').where('email', '==', email).get()
-                .then((querySnapshot) => {
-                    if (querySnapshot.empty) {
-                        loginMessage.textContent = 'User not found';
-                        return;
-                    }
+            try {
+                // Check credentials against Firestore
+                const querySnapshot = await db.collection('users')
+                    .where('email', '==', email)
+                    .get();
+                
+                updateDebugInfo('query', `Found ${querySnapshot.size} matching documents`);
+                
+                if (querySnapshot.empty) {
+                    loginMessage.textContent = 'User not found';
+                    updateDebugInfo('user', 'No user found with this email');
+                    return;
+                }
+                
+                let userFound = false;
+                querySnapshot.forEach((doc) => {
+                    const user = doc.data();
+                    updateDebugInfo('user', `Retrieved user: ${JSON.stringify(user)}`);
                     
-                    let userFound = false;
-                    querySnapshot.forEach((doc) => {
-                        const user = doc.data();
-                        if (user.password === password) {
-                            userFound = true;
-                            // Successful login
-                            loginMessage.textContent = 'Login successful! Redirecting...';
-                            loginMessage.classList.add('success-message');
-                            
-                            // Store user email in localStorage for demo purposes
-                            localStorage.setItem('userEmail', email);
-                            
-                            // REDIRECT TO index.html after a short delay
-                            setTimeout(() => {
-                                window.location.href = 'index.html';
-                            }, 1500);
-                        }
-                    });
-                    
-                    if (!userFound) {
-                        loginMessage.textContent = 'Incorrect password';
+                    if (user.password === password) {
+                        userFound = true;
+                        // Successful login
+                        loginMessage.textContent = 'Login successful! Redirecting...';
+                        loginMessage.classList.add('success-message');
+                        
+                        // Store user email in localStorage for demo purposes
+                        localStorage.setItem('userEmail', email);
+                        updateDebugInfo('storage', `Set: ${email}`);
+                        
+                        // REDIRECT TO index.html after a short delay
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
                     }
-                })
-                .catch((error) => {
-                    console.error('Error getting documents: ', error);
-                    loginMessage.textContent = 'Login error. Please try again.';
                 });
-        });
-        
-        // Check if user is already logged in (for demo purposes)
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedEmail = localStorage.getItem('userEmail');
-            if (savedEmail) {
-                // If user is already logged in, redirect to index.html
-                window.location.href = 'index.html';
+                
+                if (!userFound) {
+                    loginMessage.textContent = 'Incorrect password';
+                    updateDebugInfo('user', 'Password does not match');
+                }
+            } catch (error) {
+                console.error('Error getting documents: ', error);
+                loginMessage.textContent = 'Login error. Please try again.';
+                updateDebugInfo('query', `Error: ${error.message}`);
             }
         });
     </script>
 </body>
-
 </html>
-
-
