@@ -304,6 +304,55 @@
             font-size: 13px;
         }
         
+        /* Certification Section Styles */
+        .certification-section {
+            margin-bottom: 18px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        
+        .certification-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .certification-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .certification-row .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .certification-row .form-group label {
+            font-size: 13px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .certification-row .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .certification-statement {
+            font-size: 13px;
+            color: #495057;
+            line-height: 1.5;
+            margin-top: 8px;
+        }
+        
     </style>
 </head>
 <body>
@@ -369,7 +418,7 @@
                 <div class="section-title">SEKSYEN A : STATISTIK</div>
                 <div class="form-grid">
                     <div class="grid-header"></div>
-                    <div class="grid-header">BILANGAN KES</div>
+                    <div class="grid-header">BILANGAN</div>
                     <div class="grid-header">BILANGAN TAHUN INI</div>
                     
                     <div class="form-row">
@@ -392,7 +441,7 @@
                 <div class="form-grid">
                     <div class="grid-header"></div>
                     <div class="grid-header">BILANGAN KES</div>
-                    <div class="grid-header">BILANGAN TAHUN INI</div>
+                    <div class="grid-header">BILANGAN KES TAHUN INI</div>
                     
                     <!-- 1. Major Accident Cases -->
                     <div class="form-row">
@@ -444,7 +493,7 @@
                         <input type="number" id="fireCases" name="fireCases" min="0" value="0">
                         <input type="number" id="fireCasesYTD" name="fireCasesYTD" min="0" value="0">
                     </div>
-                    
+                
                     <div class="form-row">
                         <label for="propertyDamage">3.2 Kerosakan Harta Benda:</label>
                         <input type="number" id="propertyDamage" name="propertyDamage" min="0" value="0">
@@ -471,7 +520,7 @@
                 <div class="form-grid">
                     <div class="grid-header"></div>
                     <div class="grid-header">BILANGAN KES</div>
-                    <div class="grid-header">BILANGAN TAHUN INI</div>
+                    <div class="grid-header">BILANGAN KES TAHUN INI</div>
                     
                     <div class="form-row">
                         <label for="infectiousDisease">1. Kes Penyakit Berjangkit:</label>
@@ -523,6 +572,22 @@
                         <label for="otherActivities">6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP):</label>
                         <input type="number" id="otherActivities" name="otherActivities" min="0" value="0">
                         <input type="number" id="otherActivitiesYTD" name="otherActivitiesYTD" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 6: Certification Section -->
+            <div class="certification-section">
+                <div class="section-title">SEKSYEN E : PERAKUAN</div>
+                <div class="certification-content">
+                    <div class="certification-row">
+                        <div class="form-group">
+                            <label for="certifierName">Nama Pegawai yang Mengaku:</label>
+                            <input type="text" id="certifierName" name="certifierName" required>
+                        </div>
+                    </div>
+                    <div class="certification-statement">
+                        Saya dengan ini mengaku bahawa maklumat yang diberikan dalam laporan ini adalah benar dan tepat mengikut pengetahuan saya.
                     </div>
                 </div>
             </div>
@@ -664,7 +729,10 @@
                 uauc: document.getElementById('uauc').value,
                 uaucYTD: document.getElementById('uaucYTD').value,
                 otherActivities: document.getElementById('otherActivities').value,
-                otherActivitiesYTD: document.getElementById('otherActivitiesYTD').value
+                otherActivitiesYTD: document.getElementById('otherActivitiesYTD').value,
+                
+                // Section E: Certification
+                certifierName: document.getElementById('certifierName').value
             };
         }
         
@@ -721,6 +789,14 @@
             yPosition = addSectionC(doc, data, yPosition);
             yPosition = addSectionD(doc, data, yPosition);
             
+            // Check if we need a new page for Section E
+            if (yPosition > 180) {
+                doc.addPage();
+                yPosition = 15;
+            }
+            
+            yPosition = addSectionE(doc, data, yPosition);
+            
             return doc;
         }
         
@@ -776,233 +852,258 @@
             return doc.lastAutoTable.finalY + 8;
         }
         
-        // Function to add Section A
-        function addSectionA(doc, data, yPosition) {
+        // Function to add Section A with uniform table styling
+function addSectionA(doc, data, yPosition) {
+    doc.setFontSize(11.5);
+    doc.text("SEKSYEN A : STATISTIK", 15, yPosition);
+    yPosition += 6;
+    
+    // Create table for Section A
+    const sectionA = [
+        ["1. Jumlah Bilangan Pekerja", data.totalWorkers, data.totalWorkersYTD],
+        ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD]
+    ];
+    
+    doc.autoTable({
+        startY: yPosition,
+        head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
+        body: sectionA,
+        theme: 'grid',
+        headStyles: {
+            fillColor: [74, 108, 247],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10,
+            halign: 'center'
+        },
+        columnStyles: {
+            0: { cellWidth: 'auto', halign: 'left' },
+            1: { cellWidth: 25, halign: 'center' },
+            2: { cellWidth: 35, halign: 'center' }
+        },
+        styles: {
+            fontSize: 10,
+            cellPadding: 3,
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2,
+            minCellHeight: 7
+        },
+        margin: { left: 15, right: 15 }
+    });
+    
+    return doc.lastAutoTable.finalY + 8;
+}
+
+// Function to add Section B with uniform table styling
+function addSectionB(doc, data, yPosition) {
+    doc.setFontSize(11.5);
+    doc.text("SEKSYEN B : REKOD KES KEMALANGAN", 15, yPosition);
+    yPosition += 6;
+    
+    // Create table for Section B
+    const sectionB = [
+        ["1. Kes Kemalangan Major (Cuti Sakit >= 5 Hari)", "", ""],
+        ["1.1 Kematian", data.deathCases, data.deathCasesYTD],
+        ["1.2 Kemalangan Parah (Cuti Sakit >= 5 Hari)", data.severeAccidents, data.severeAccidentsYTD],
+        ["2. Kes Kemalangan Minor (Cuti Sakit < 5 Hari)", "", ""],
+        ["2.1 Kes Rawatan Perubatan", data.medicalCases, data.medicalCasesYTD],
+        ["2.2 Kes Rawatan Kecil (First Aid)", data.firstAidCases, data.firstAidCasesYTD],
+        ["2.3 Penyakit Pekerjaan", data.occupationalDisease, data.occupationalDiseaseYTD],
+        ["3. Kes Kemalangan Tiada Kecederaan", "", ""],
+        ["3.1 Kebakaran", data.fireCases, data.fireCasesYTD],
+        ["3.2 Kerosakan Harta Benda", data.propertyDamage, data.propertyDamageYTD],
+        ["3.3 Kemalangan dalam Perjalanan", data.commutingAccidents, data.commutingAccidentsYTD],
+        ["3.4 Kejadian Hampir (Near Miss)", data.nearMiss, data.nearMissYTD]
+    ];
+    
+    doc.autoTable({
+        startY: yPosition,
+        head: [['PERKARA', 'BILANGAN KES', 'BILANGAN KES TAHUN INI']],
+        body: sectionB,
+        theme: 'grid',
+        headStyles: {
+            fillColor: [74, 108, 247],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10,
+            halign: 'center'
+        },
+        columnStyles: {
+            0: { cellWidth: 'auto', halign: 'left' },
+            1: { cellWidth: 25, halign: 'center' },
+            2: { cellWidth: 35, halign: 'center' }
+        },
+        styles: {
+            fontSize: 9.5,
+            cellPadding: 3,
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2,
+            minCellHeight: 7
+        },
+        margin: { left: 15, right: 15 },
+        didParseCell: function(data) {
+            // Style for section headers
+            if (data.cell.raw === "" && data.row.index % 4 === 0) {
+                data.cell.styles.fillColor = [240, 240, 240];
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.halign = 'left';
+            }
+        }
+    });
+    
+    return doc.lastAutoTable.finalY + 8;
+}
+
+// Function to add Section C with uniform table styling
+function addSectionC(doc, data, yPosition) {
+    doc.setFontSize(11.5);
+    doc.text("SEKSYEN C : REKOD KES BERKAITAN KESIHATAN", 15, yPosition);
+    yPosition += 6;
+    
+    // Create table for Section C
+    const sectionC = [
+        ["1. Kes Penyakit Berjangkit", data.infectiousDisease, data.infectiousDiseaseYTD]
+    ];
+    
+    doc.autoTable({
+        startY: yPosition,
+        head: [['PERKARA', 'BILANGAN KES', 'BILANGAN KES TAHUN INI']],
+        body: sectionC,
+        theme: 'grid',
+        headStyles: {
+            fillColor: [74, 108, 247],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10,
+            halign: 'center'
+        },
+        columnStyles: {
+            0: { cellWidth: 'auto', halign: 'left' },
+            1: { cellWidth: 25, halign: 'center' },
+            2: { cellWidth: 35, halign: 'center' }
+        },
+        styles: {
+            fontSize: 10,
+            cellPadding: 3,
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2,
+            minCellHeight: 7
+        },
+        margin: { left: 15, right: 15 }
+    });
+    
+    return doc.lastAutoTable.finalY + 8;
+}
+
+// Function to add Section D with uniform table styling
+function addSectionD(doc, data, yPosition) {
+    doc.setFontSize(11.5);
+    doc.text("SEKSYEN D : PROGRAM KKP", 15, yPosition);
+    yPosition += 6;
+    
+    // Create table for Section D
+    const sectionD = [
+        ["1. Jumlah Mesyuarat KKP", data.meetings, data.meetingsYTD],
+        ["2. Jumlah Latihan KKP", data.trainings, data.trainingsYTD],
+        ["3. Jumlah Taklimat/Toolbox", data.briefings, data.briefingsYTD],
+        ["4. Jumlah Pemeriksaan KKP (Pemeriksaan Dalaman & Luaran)", data.inspections, data.inspectionsYTD],
+        ["5. Pelaporan Unsafe Act Unsafe Condition (UAUC)", data.uauc, data.uaucYTD],
+        ["6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP)", data.otherActivities, data.otherActivitiesYTD]
+    ];
+    
+    doc.autoTable({
+        startY: yPosition,
+        head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
+        body: sectionD,
+        theme: 'grid',
+        headStyles: {
+            fillColor: [74, 108, 247],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10,
+            halign: 'center'
+        },
+        columnStyles: {
+            0: { cellWidth: 'auto', halign: 'left' },
+            1: { cellWidth: 25, halign: 'center' },
+            2: { cellWidth: 35, halign: 'center' }
+        },
+        styles: {
+            fontSize: 9.5,
+            cellPadding: 3,
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2,
+            minCellHeight: 7
+        },
+        margin: { left: 15, right: 15 }
+    });
+    
+    return doc.lastAutoTable.finalY + 8;
+}
+        
+        // Function to add Section E (Certification)
+        function addSectionE(doc, data, yPosition) {
             doc.setFontSize(11.5);
-            doc.text("SEKSYEN A : STATISTIK", 15, yPosition);
-            yPosition += 6;
+            doc.text("SEKSYEN E : PERAKUAN", 15, yPosition);
+            yPosition += 10;
             
-            // Create table for Section A
-            const sectionA = [
-                ["1. Jumlah Bilangan Pekerja", data.totalWorkers, data.totalWorkersYTD],
-                ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD]
-            ];
+            // Add certification statement
+            doc.setFontSize(10);
+            doc.text("Saya dengan ini mengaku bahawa maklumat yang diberikan dalam laporan ini adalah", 20, yPosition);
+            yPosition += 5;
+            doc.text("benar dan tepat mengikut pengetahuan saya.", 20, yPosition);
+            yPosition += 10;
             
-            doc.autoTable({
-                startY: yPosition,
-                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN TAHUN INI']],
-                body: sectionA,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [74, 108, 247],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 2,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 6
-                },
-                margin: { left: 15, right: 15 }
-            });
+            // Add certifier name only
+            doc.text("Nama Pegawai yang Mengaku:", 20, yPosition);
+            doc.text(data.certifierName, 70, yPosition);
+            yPosition += 15;
             
-            return doc.lastAutoTable.finalY + 8;
+            // Add signature line
+            // doc.line(20, yPosition, 80, yPosition);
+            // doc.text("(Tandatangan)", 40, yPosition + 5);
+            
+            return yPosition;
         }
         
-        // Function to add Section B
-        function addSectionB(doc, data, yPosition) {
-            doc.setFontSize(11.5);
-            doc.text("SEKSYEN B : REKOD KES KEMALANGAN", 15, yPosition);
-            yPosition += 6;
-            
-            // Create table for Section B
-            const sectionB = [
-                // Major accidents section
-                [{content: "1. Kes Kemalangan Major (Cuti Sakit >= 5 Hari)", colSpan: 3, styles: {fontStyle: 'bold', fillColor: [240, 245, 255], fontSize: 10}}],
-                ["   1.1 Kematian", data.deathCases, data.deathCasesYTD],
-                ["   1.2 Kemalangan Parah (Cuti Sakit >= 5 Hari)", data.severeAccidents, data.severeAccidentsYTD],
-                
-                // Minor accidents section
-                [{content: "2. Kes Kemalangan Minor (Cuti Sakit < 5 Hari)", colSpan: 3, styles: {fontStyle: 'bold', fillColor: [240, 245, 255], fontSize: 10}}],
-                ["   2.1 Kes Rawatan Perubatan", data.medicalCases, data.medicalCasesYTD],
-                ["   2.2 Kes Rawatan Kecil (First Aid)", data.firstAidCases, data.firstAidCasesYTD],
-                ["   2.3 Penyakit Pekerjaan", data.occupationalDisease, data.occupationalDiseaseYTD],
-                
-                // No injury accidents section
-                [{content: "3. Kes Kemalangan Tiada Kecederaan", colSpan: 3, styles: {fontStyle: 'bold', fillColor: [240, 245, 255], fontSize: 10}}],
-                ["   3.1 Kebakaran", data.fireCases, data.fireCasesYTD],
-                ["   3.2 Kerosakan Harta Benda", data.propertyDamage, data.propertyDamageYTD],
-                ["   3.3 Kemalangan dalam Perjalanan", data.commutingAccidents, data.commutingAccidentsYTD],
-                ["   3.4 Kejadian Hampir (Near Miss)", data.nearMiss, data.nearMissYTD]
-            ];
-            
-            doc.autoTable({
-                startY: yPosition,
-                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN TAHUN INI']],
-                body: sectionB,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [74, 108, 247],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 2,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 6
-                },
-                margin: { left: 15, right: 15 }
-            });
-            
-            return doc.lastAutoTable.finalY + 8;
-        }
-        
-        // Function to add Section C
-        function addSectionC(doc, data, yPosition) {
-            doc.setFontSize(11.5);
-            doc.text("SEKSYEN C : REKOD KES BERKAITAN KESIHATAN", 15, yPosition);
-            yPosition += 6;
-            
-            // Create table for Section C
-            const sectionC = [
-                ["1. Kes Penyakit Berjangkit", data.infectiousDisease, data.infectiousDiseaseYTD]
-            ];
-            
-            doc.autoTable({
-                startY: yPosition,
-                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN TAHUN INI']],
-                body: sectionC,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [74, 108, 247],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 2,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 6
-                },
-                margin: { left: 15, right: 15 }
-            });
-            
-            return doc.lastAutoTable.finalY + 8;
-        }
-        
-        // Function to add Section D
-        function addSectionD(doc, data, yPosition) {
-            doc.setFontSize(11.5);
-            doc.text("SEKSYEN D : PROGRAM KKP", 15, yPosition);
-            yPosition += 6;
-            
-            // Create table for Section D
-            const sectionD = [
-                ["1. Jumlah Mesyuarat KKP", data.meetings, data.meetingsYTD],
-                ["2. Jumlah Latihan KKP", data.trainings, data.trainingsYTD],
-                ["3. Jumlah Taklimat/Toolbox", data.briefings, data.briefingsYTD],
-                ["4. Jumlah Pemeriksaan KKP (Pemeriksaan Dalaman & Luaran)", data.inspections, data.inspectionsYTD],
-                ["5. Pelaporan Unsafe Act Unsafe Condition (UAUC)", data.uauc, data.uaucYTD],
-                ["6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP)", data.otherActivities, data.otherActivitiesYTD]
-            ];
-            
-            doc.autoTable({
-                startY: yPosition,
-                head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
-                body: sectionD,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [74, 108, 247],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 2,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 6
-                },
-                margin: { left: 15, right: 15 }
-            });
-            
-            return doc.lastAutoTable.finalY + 8;
-        }
-        
-        // Function to try automatic download
-        function tryDownload(pdfDoc) {
+        // Function to try downloading the PDF
+        function tryDownload(pdfData) {
             try {
                 const date = new Date().toISOString().slice(0, 10);
-                pdfDoc.save(`Laporan_KKP_${date}.pdf`);
+                pdfData.save(`Laporan_KKP_${date}.pdf`);
                 return true;
             } catch (error) {
-                console.error('Automatic download failed:', error);
+                console.error("Error downloading PDF: ", error);
                 return false;
             }
         }
-
-        // Function to view the PDF guide
-        function viewGuide() {
-            // Replace this URL with your actual PDF URL
-            window.open('PANDUAN BORANG LAPORAN PRESTASI BULANAN KKP OGOS 2025.pdf', '_blank');
+        
+        // Function to handle guide viewing
+        function handleGuideView() {
+            alert("Panduan akan dibuka dalam tetingkap baru. Sila pastikan pop-up tidak disekat.");
+            // In a real implementation, you would open a PDF guide here
+            // window.open('path/to/guide.pdf', '_blank');
         }
-
-        // Function to download the PDF guide - UPDATED to use same method as data.html
-        function downloadGuide() {
-            try {
-                // Create a temporary link element
-                const link = document.getElementById('guideDownloadLink');
-                
-                // Set the PDF URL (replace with your actual guide PDF URL)
-                const pdfUrl = 'PANDUAN BORANG LAPORAN PRESTASI BULANAN KKP OGOS 2025.pdf';
-                
-                // Set link attributes
-                link.href = pdfUrl;
-                link.download = 'PANDUAN BORANG LAPORAN PRESTASI BULANAN KKP OGOS 2025.pdf';
-                
-                // Programmatically click the link to trigger download
-                link.click();
-            } catch (error) {
-                console.error('Error downloading guide:', error);
-                // Fallback: Open in new tab if download fails
-                window.open('PANDUAN BORANG LAPORAN PRESTASI BULANAN KKP OGOS 2025.pdf', '_blank');
-            }
+        
+        // Set default date values
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('reportDate').value = today;
         }
-
-        // Set up event listeners when page loads
-        function initializePage() {
-            // Set default date to today
-            document.getElementById('reportDate').valueAsDate = new Date();
+        
+        // Initialize the form
+        function initializeForm() {
+            // Set default dates
+            setDefaultDates();
             
-            // Add form submit handler
+            // Add event listeners
             document.getElementById('kkpForm').addEventListener('submit', handleFormSubmit);
-            
-            // Add download button handler
             document.getElementById('downloadBtn').addEventListener('click', handleDownloadClick);
-            
-            // Add guide button handlers
-            document.getElementById('viewGuideBtn').addEventListener('click', function(e) {
-                e.preventDefault();
-                viewGuide();
-            });
-            
-            document.getElementById('downloadGuideBtn').addEventListener('click', function(e) {
-                e.preventDefault();
-                downloadGuide();
-            });
+            document.getElementById('viewGuideBtn').addEventListener('click', handleGuideView);
         }
-
-        // Initialize the page when it loads
-        window.onload = initializePage;
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeForm);
     </script>
 </body>
 </html>
