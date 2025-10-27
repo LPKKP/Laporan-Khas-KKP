@@ -1245,38 +1245,186 @@
             document.body.removeChild(link);
         }
 
-        // Export to CSV (exports current filtered view)
+        // =========================================================================
+        // QUARTERLY SUMMARY CSV EXPORT FUNCTION (Based on Laporan KKP.xlsx)
+        // =========================================================================
+
+
+
         function exportToCSV() {
             if (currentReports.length === 0) {
                 alert('No data to export');
                 return;
             }
             
-            const headers = ['Bahagian/Unit', 'Suku', 'Kematian', 'Kemalangan Parah', 'Jumlah Kemalangan', 'Di sediakan oleh', 'Tarikh Laporan', 'Tarikh Dicipta'];
+            const csvRows = [];
             
-            const csvContent = [
-                headers.join(','),
-                ...currentReports.map(report => [
-                    safeGetValue(report.division, '').replace(/,/g, ';'),
-                    safeGetValue(report.quarter, ''),
+            // Title and headers
+            csvRows.push(',,,,LAPORAN KKP - DATA TERPERINCI');
+            csvRows.push(',,,,');
+            
+            // Main headers
+            const headers = [
+                'No',
+                'Bahagian/Unit',
+                'Suku', 
+                'Tarikh Laporan',
+                'Pegawai Mengaku',
+                // Section A: STATISTIK - BILANGAN only
+                'A1. Jumlah Bilangan Pekerja',
+                'A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan',
+                // Section B: REKOD KES KEMALANGAN - BILANGAN KES only
+                'B1.1 Kematian',
+                'B1.2 Kemalangan Parah (Cuti Sakit ≥ 5 Hari)',
+                'B2.1 Kes Rawatan Perubatan',
+                'B2.2 Kes Rawatan Kecil (First Aid)',
+                'B2.3 Penyakit Pekerjaan',
+                'B3.1 Kebakaran',
+                'B3.2 Kerosakan Harta Benda',
+                'B3.3 Kemalangan dalam Perjalanan',
+                'B3.4 Kejadian Hampir (Near Miss)',
+                // Section C: REKOD KES BERKAITAN KESIHATAN - BILANGAN KES only
+                'C1. Kes Penyakit Berjangkit',
+                // Section D: PROGRAM KKP - BILANGAN only
+                'D1. Jumlah Mesyuarat KKP',
+                'D2. Jumlah Latihan KKP',
+                'D3. Jumlah Taklimat/Toolbox',
+                'D4. Jumlah Pemeriksaan KKP',
+                'D5. Pelaporan UAUC',
+                'D6. Lain-lain Aktiviti KKP',
+                // Jumlah column
+                'Jumlah'
+            ];
+            
+            csvRows.push(headers.join(','));
+            
+            // Add data rows
+            currentReports.forEach((report, index) => {
+                const globalIndex = ((currentPage - 1) * entriesPerPage) + index + 1;
+                
+                // Calculate total for Jumlah column
+                const total = calculateExportTotal(report);
+                
+                const row = [
+                    globalIndex,
+                    escapeCsvValue(report.division),
+                    escapeCsvValue(report.quarter),
+                    escapeCsvValue(report.reportDate),
+                    escapeCsvValue(report.certifierName),
+                    // Section A: BILANGAN only
+                    safeGetValue(report.totalWorkers, '0'),
+                    safeGetValue(report.sickLeave, '0'),
+                    // Section B: BILANGAN KES only  
                     safeGetValue(report.deathCases, '0'),
                     safeGetValue(report.severeAccidents, '0'),
-                    calculateTotalAccidents(report),
-                    safeGetValue(report.certifierName, ''),
-                    safeGetValue(report.reportDate, ''),
-                    report.createdAt ? new Date(report.createdAt.seconds * 1000).toLocaleDateString() : ''
-                ].join(','))
-            ].join('\n');
+                    safeGetValue(report.medicalCases, '0'),
+                    safeGetValue(report.firstAidCases, '0'),
+                    safeGetValue(report.occupationalDisease, '0'),
+                    safeGetValue(report.fireCases, '0'),
+                    safeGetValue(report.propertyDamage, '0'),
+                    safeGetValue(report.commutingAccidents, '0'),
+                    safeGetValue(report.nearMiss, '0'),
+                    // Section C: BILANGAN KES only
+                    safeGetValue(report.infectiousDisease, '0'),
+                    // Section D: BILANGAN only
+                    safeGetValue(report.meetings, '0'),
+                    safeGetValue(report.trainings, '0'),
+                    safeGetValue(report.briefings, '0'),
+                    safeGetValue(report.inspections, '0'),
+                    safeGetValue(report.uauc, '0'),
+                    safeGetValue(report.otherActivities, '0'),
+                    // Jumlah column
+                    total
+                ];
+                
+                csvRows.push(row.join(','));
+            });
             
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            createAndDownloadCsv(csvRows, 'Laporan_KKP_Data_Terperinci');
+        }
+
+        // New function to calculate total for Jumlah column
+        function calculateExportTotal(report) {
+            const numericFields = [
+                'totalWorkers', 'sickLeave',                    // Section A
+                'deathCases', 'severeAccidents',               // Section B
+                'medicalCases', 'firstAidCases',               // Section B
+                'occupationalDisease', 'fireCases',            // Section B  
+                'propertyDamage', 'commutingAccidents',        // Section B
+                'nearMiss',                                    // Section B
+                'infectiousDisease',                           // Section C
+                'meetings', 'trainings', 'briefings',          // Section D
+                'inspections', 'uauc', 'otherActivities'       // Section D
+            ];
+            
+            let total = 0;
+            numericFields.forEach(field => {
+                const value = parseInt(safeGetValue(report[field], '0'));
+                if (!isNaN(value)) {
+                    total += value;
+                }
+            });
+            
+            return total;
+        }
+
+        // Group reports by quarter and calculate totals
+        function groupReportsByQuarter(reports) {
+            const quarterlyData = {
+                'Q1': { deathCases: 0, severeAccidents: 0, totalAccidents: 0 },
+                'Q2': { deathCases: 0, severeAccidents: 0, totalAccidents: 0 },
+                'Q3': { deathCases: 0, severeAccidents: 0, totalAccidents: 0 },
+                'Q4': { deathCases: 0, severeAccidents: 0, totalAccidents: 0 }
+            };
+            
+            reports.forEach(report => {
+                const quarter = report.quarter;
+                if (quarterlyData[quarter]) {
+                    quarterlyData[quarter].deathCases += parseInt(safeGetValue(report.deathCases, 0));
+                    quarterlyData[quarter].severeAccidents += parseInt(safeGetValue(report.severeAccidents, 0));
+                    quarterlyData[quarter].totalAccidents += calculateTotalAccidents(report);
+                }
+            });
+            
+            return quarterlyData;
+        }
+
+        // Proper CSV value escaping
+        function escapeCsvValue(value) {
+            if (value === null || value === undefined) return '';
+            
+            const stringValue = String(value);
+            
+            // Escape quotes and wrap in quotes if contains comma, quote, or newline
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
+                return '"' + stringValue.replace(/"/g, '""') + '"';
+            }
+            
+            return stringValue;
+        }
+
+        // Create and trigger download
+        function createAndDownloadCsv(csvRows, filenamePrefix = 'Laporan_KKP') {
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob([csvContent], { 
+                type: 'text/csv;charset=utf-8;' 
+            });
+            
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `KKP_Reports_${new Date().toISOString().split('T')[0]}.csv`);
+            
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().split('T')[0];
+            link.setAttribute('download', `${filenamePrefix}_${timestamp}.csv`);
+            
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            // Clean up URL object
+            setTimeout(() => URL.revokeObjectURL(url), 100);
         }
     </script>
 </body>
