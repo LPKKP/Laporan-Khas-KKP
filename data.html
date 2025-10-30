@@ -205,7 +205,7 @@
             flex-wrap: nowrap;
         }
         
-        .view-btn, .download-btn, .export-btn {
+        .view-btn, .download-btn, .export-btn, .export-all-btn {
             border: none;
             padding: 8px 12px;
             border-radius: 4px;
@@ -240,12 +240,28 @@
         .export-btn {
             background: #6f42c1;
             color: white;
-            margin-left: 10px;
         }
         
         .export-btn:hover {
             background: #5e35b1;
             transform: translateY(-1px);
+        }
+        
+        /* Export All Button Styles */
+        .export-all-btn {
+            background: #fd7e14;
+            color: white;
+        }
+        
+        .export-all-btn:hover {
+            background: #e96a10;
+            transform: translateY(-1px);
+        }
+        
+        .export-all-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
         }
         
         /* Clear Button Styles */
@@ -455,6 +471,23 @@
             margin-top: 5px;
         }
         
+        /* Loading indicator for export */
+        .export-loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 1024px) {
             .data-container {
                 max-width: 95%;
@@ -471,7 +504,7 @@
                 font-size: 13px;
             }
             
-            .view-btn, .download-btn, .export-btn {
+            .view-btn, .download-btn, .export-btn, .export-all-btn {
                 padding: 6px 10px;
                 font-size: 12px;
                 min-width: 70px;
@@ -511,7 +544,7 @@
                 gap: 5px;
             }
             
-            .view-btn, .download-btn, .export-btn {
+            .view-btn, .download-btn, .export-btn, .export-all-btn {
                 width: 100%;
                 text-align: center;
             }
@@ -540,7 +573,7 @@
                 flex-direction: column;
             }
             
-            .filter-select, .clear-btn, .export-btn {
+            .filter-select, .clear-btn, .export-btn, .export-all-btn {
                 width: 100%;
                 text-align: center;
             }
@@ -567,7 +600,7 @@
                 font-size: 11px;
             }
             
-            .view-btn, .download-btn, .export-btn {
+            .view-btn, .download-btn, .export-btn, .export-all-btn {
                 font-size: 11px;
                 padding: 5px 8px;
                 min-width: 60px;
@@ -644,8 +677,8 @@
                 <option value="Q4">Q4</option>
             </select>
             <input type="month" class="filter-select" id="dateFilter">
-            <button class="export-btn" id="exportBtn">Export to CSV</button>
-            <!-- Add Clear Data Button -->
+            <button class="export-btn" id="exportBtn">Export Current Data</button>
+            <button class="export-all-btn" id="exportAllBtn">Export All Data</button>
             <button class="clear-btn" id="clearDataBtn">Clear All Data</button>
         </div>
         
@@ -718,6 +751,7 @@
         const pdfTitle = document.getElementById('pdfTitle');
         const closeModal = document.querySelector('.close');
         const exportBtn = document.getElementById('exportBtn');
+        const exportAllBtn = document.getElementById('exportAllBtn');
         const divisionFilter = document.getElementById('divisionFilter');
         const quarterFilter = document.getElementById('quarterFilter');
         const dateFilter = document.getElementById('dateFilter');
@@ -897,6 +931,7 @@
             logoutBtn.addEventListener('click', handleLogout);
             closeModal.addEventListener('click', closePdfModal);
             exportBtn.addEventListener('click', exportToCSV);
+            exportAllBtn.addEventListener('click', exportAllData);
             
             // Sorting
             document.querySelectorAll('.sortable').forEach(th => {
@@ -1246,11 +1281,160 @@
         }
 
         // =========================================================================
+        // EXPORT ALL DATA FUNCTION - Fetches complete dataset from Firestore
+        // =========================================================================
+        function exportAllData() {
+            const originalText = exportAllBtn.textContent;
+            
+            // Show loading state
+            exportAllBtn.disabled = true;
+            exportAllBtn.innerHTML = '<span class="export-loading"></span>Exporting All Data...';
+            
+            // Fetch ALL data from Firestore without pagination/filters
+            db.collection('kkpReports')
+                .orderBy('createdAt', 'desc')
+                .get()
+                .then((querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        alert('No data found in the database to export.');
+                        resetExportAllButton(originalText);
+                        return;
+                    }
+                    
+                    const allReports = [];
+                    querySnapshot.forEach((doc) => {
+                        const report = doc.data();
+                        report.id = doc.id;
+                        allReports.push(report);
+                    });
+                    
+                    // Generate CSV with all data
+                    generateCompleteCsv(allReports, 'Laporan_KKP_Data_Lengkap');
+                    resetExportAllButton(originalText);
+                    
+                })
+                .catch((error) => {
+                    console.error('Error fetching all data for export: ', error);
+                    alert('Error exporting all data. Please try again.');
+                    resetExportAllButton(originalText);
+                });
+        }
+
+        function resetExportAllButton(originalText) {
+            exportAllBtn.disabled = false;
+            exportAllBtn.textContent = originalText;
+        }
+
+        // Generate CSV with complete dataset
+        function generateCompleteCsv(reports, filenamePrefix = 'Laporan_KKP') {
+            const csvRows = [];
+            
+            // Title and headers
+            csvRows.push(',,,,LAPORAN KKP - DATA LENGKAP (SEMUA REKOD)');
+            csvRows.push(',,,,');
+            csvRows.push(`,,,,"Total Records: ${reports.length}"`);
+            csvRows.push(',,,,');
+            
+            // Main headers
+            const headers = [
+                'No',
+                'Bahagian/Unit',
+                'Suku', 
+                'Tarikh Laporan',
+                'Pegawai Mengaku',
+                // Section A: STATISTIK - BILANGAN only
+                'A1. Jumlah Bilangan Pekerja',
+                'A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan',
+                // Section B: REKOD KES KEMALANGAN - BILANGAN KES only
+                'B1.1 Kematian',
+                'B1.2 Kemalangan Parah (Cuti Sakit ≥ 5 Hari)',
+                'B2.1 Kes Rawatan Perubatan',
+                'B2.2 Kes Rawatan Kecil (First Aid)',
+                'B2.3 Penyakit Pekerjaan',
+                'B3.1 Kebakaran',
+                'B3.2 Kerosakan Harta Benda',
+                'B3.3 Kemalangan dalam Perjalanan',
+                'B3.4 Kejadian Hampir (Near Miss)',
+                // Section C: REKOD KES BERKAITAN KESIHATAN - BILANGAN KES only
+                'C1. Kes Penyakit Berjangkit',
+                // Section D: PROGRAM KKP - BILANGAN only
+                'D1. Jumlah Mesyuarat KKP',
+                'D2. Jumlah Latihan KKP',
+                'D3. Jumlah Taklimat/Toolbox',
+                'D4. Jumlah Pemeriksaan KKP',
+                'D5. Pelaporan UAUC',
+                'D6. Lain-lain Aktiviti KKP',
+                // Jumlah column
+                'Jumlah',
+                // Additional metadata
+                'ID Dokumen',
+                'Tarikh Dicipta'
+            ];
+            
+            csvRows.push(headers.join(','));
+            
+            // Add data rows for ALL reports
+            reports.forEach((report, index) => {
+                // Calculate total for Jumlah column
+                const total = calculateExportTotal(report);
+                
+                const row = [
+                    index + 1, // Sequential number for all records
+                    escapeCsvValue(report.division),
+                    escapeCsvValue(report.quarter),
+                    escapeCsvValue(report.reportDate),
+                    escapeCsvValue(report.certifierName),
+                    // Section A: BILANGAN only
+                    safeGetValue(report.totalWorkers, '0'),
+                    safeGetValue(report.sickLeave, '0'),
+                    // Section B: BILANGAN KES only  
+                    safeGetValue(report.deathCases, '0'),
+                    safeGetValue(report.severeAccidents, '0'),
+                    safeGetValue(report.medicalCases, '0'),
+                    safeGetValue(report.firstAidCases, '0'),
+                    safeGetValue(report.occupationalDisease, '0'),
+                    safeGetValue(report.fireCases, '0'),
+                    safeGetValue(report.propertyDamage, '0'),
+                    safeGetValue(report.commutingAccidents, '0'),
+                    safeGetValue(report.nearMiss, '0'),
+                    // Section C: BILANGAN KES only
+                    safeGetValue(report.infectiousDisease, '0'),
+                    // Section D: BILANGAN only
+                    safeGetValue(report.meetings, '0'),
+                    safeGetValue(report.trainings, '0'),
+                    safeGetValue(report.briefings, '0'),
+                    safeGetValue(report.inspections, '0'),
+                    safeGetValue(report.uauc, '0'),
+                    safeGetValue(report.otherActivities, '0'),
+                    // Jumlah column
+                    total,
+                    // Additional metadata
+                    escapeCsvValue(report.id),
+                    escapeCsvValue(report.createdAt ? new Date(report.createdAt.seconds * 1000).toISOString() : 'N/A')
+                ];
+                
+                csvRows.push(row.join(','));
+            });
+            
+            // Add summary row
+            csvRows.push(',,,,');
+            csvRows.push(',,,,SUMMARY');
+            csvRows.push(`"Total Reports","${reports.length}",,,`);
+            
+            const totalDeathCases = reports.reduce((sum, report) => sum + parseInt(safeGetValue(report.deathCases, '0')), 0);
+            const totalSevereAccidents = reports.reduce((sum, report) => sum + parseInt(safeGetValue(report.severeAccidents, '0')), 0);
+            const totalAccidents = reports.reduce((sum, report) => sum + calculateExportTotal(report), 0);
+            
+            csvRows.push(`"Total Death Cases","${totalDeathCases}",,,`);
+            csvRows.push(`"Total Severe Accidents","${totalSevereAccidents}",,,`);
+            csvRows.push(`"Total All Incidents","${totalAccidents}",,,`);
+            
+            createAndDownloadCsv(csvRows, filenamePrefix);
+        }
+
+        // =========================================================================
         // QUARTERLY SUMMARY CSV EXPORT FUNCTION (Based on Laporan KKP.xlsx)
         // =========================================================================
-
-
-
         function exportToCSV() {
             if (currentReports.length === 0) {
                 alert('No data to export');
@@ -1260,7 +1444,9 @@
             const csvRows = [];
             
             // Title and headers
-            csvRows.push(',,,,LAPORAN KKP - DATA TERPERINCI');
+            csvRows.push(',,,,LAPORAN KKP - DATA TERPERINCI (DATA SEMASA)');
+            csvRows.push(',,,,');
+            csvRows.push(`,,,,"Current View: ${currentReports.length} records"`);
             csvRows.push(',,,,');
             
             // Main headers
