@@ -1006,14 +1006,13 @@
             }
         });
 
-        // Set default date range (last 30 days)
+        // Set default date range to January 1 - December 31 of current year
         function setupDefaultDates() {
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 30);
+            const currentYear = new Date().getFullYear();
             
-            startDateFilter.valueAsDate = startDate;
-            endDateFilter.valueAsDate = endDate;
+            // Set directly in YYYY-MM-DD format
+            startDateFilter.value = `${currentYear}-01-01`;
+            endDateFilter.value = `${currentYear}-12-31`;
         }
 
         // Load all reports at once for client-side filtering
@@ -1107,13 +1106,16 @@
                         matchesDateRange = false;
                     } else {
                         const reportDateObj = new Date(reportDate);
+                        reportDateObj.setHours(12, 0, 0, 0); // Normalize time to avoid timezone issues
+                        
                         if (filters.startDate) {
                             const startDateObj = new Date(filters.startDate);
+                            startDateObj.setHours(0, 0, 0, 0);
                             if (reportDateObj < startDateObj) matchesDateRange = false;
                         }
                         if (filters.endDate) {
                             const endDateObj = new Date(filters.endDate);
-                            endDateObj.setHours(23, 59, 59, 999); // End of day
+                            endDateObj.setHours(23, 59, 59, 999);
                             if (reportDateObj > endDateObj) matchesDateRange = false;
                         }
                     }
@@ -1177,12 +1179,24 @@
                 // Show date range info if applicable
                 if (filters.startDate || filters.endDate) {
                     dateRangeInfo.style.display = 'inline';
+                    const start = filters.startDate ? formatDateForDisplay(filters.startDate) : 'Any';
+                    const end = filters.endDate ? formatDateForDisplay(filters.endDate) : 'Any';
+                    dateRangeInfo.textContent = ` from ${start} to ${end}`;
                 } else {
                     dateRangeInfo.style.display = 'none';
                 }
             } else {
                 searchResultsInfo.style.display = 'none';
             }
+        }
+
+        // Format date for display
+        function formatDateForDisplay(dateString) {
+            return new Date(dateString).toLocaleDateString('ms-MY', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
         }
 
         // Setup event listeners
@@ -1328,7 +1342,7 @@
             startDateFilter.value = '';
             endDateFilter.value = '';
             searchInput.value = '';
-            setupDefaultDates();
+            setupDefaultDates(); // Reset to current year range
             applyFilters();
             setActiveQuickAction(clearFiltersBtn);
         }
