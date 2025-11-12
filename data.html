@@ -571,6 +571,27 @@
             background: #4a6cf7;
         }
         
+        /* Export Options Styles */
+        .export-options {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .export-options strong {
+            display: block;
+            margin-bottom: 10px;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .export-options .action-btn {
+            margin-right: 8px;
+            margin-bottom: 5px;
+        }
+        
         @media (max-width: 1024px) {
             .data-container {
                 max-width: 95%;
@@ -604,6 +625,12 @@
             
             .date-range-separator {
                 display: none;
+            }
+            
+            .export-options .action-btn {
+                margin-right: 5px;
+                font-size: 12px;
+                padding: 6px 10px;
             }
         }
         
@@ -691,6 +718,11 @@
             .action-btn {
                 width: 100%;
                 text-align: center;
+            }
+            
+            .export-options .action-btn {
+                width: 100%;
+                margin-right: 0;
             }
         }
         
@@ -802,6 +834,16 @@
             <button class="clear-btn" id="clearDataBtn">Clear All Data</button>
         </div>
         
+        <!-- Export Options -->
+        <!-- ON HOLD -->
+        <!-- <div class="export-options">
+            <strong>Pilihan Eksport:</strong>
+            <button class="action-btn" id="exportSummaryBtn">Ringkasan</button>
+            <button class="action-btn" id="exportQuarterlyBtn">Mengikut Suku</button>
+            <button class="action-btn" id="exportDetailedBtn">Terperinci</button>
+            <button class="action-btn" id="exportAllDetailedBtn">Semua Data Terperinci</button>
+        </div> -->
+        
         <!-- Search Results Info -->
         <div id="searchResultsInfo" class="search-results-info" style="display: none;">
             Showing <strong id="resultsCount">0</strong> of <strong id="totalCount">0</strong> reports
@@ -903,6 +945,12 @@
         const confirmClearBtn = document.getElementById('confirmClearBtn');
         const cancelClearBtn = document.getElementById('cancelClearBtn');
         
+        // Export option buttons
+        const exportSummaryBtn = document.getElementById('exportSummaryBtn');
+        const exportQuarterlyBtn = document.getElementById('exportQuarterlyBtn');
+        const exportDetailedBtn = document.getElementById('exportDetailedBtn');
+        const exportAllDetailedBtn = document.getElementById('exportAllDetailedBtn');
+        
         // Client-side filtering variables
         let allReports = [];
         let filteredReports = [];
@@ -914,6 +962,13 @@
         let totalReports = 0;
         let searchTimeout = null;
         let isSearching = false;
+
+        // Export configuration options
+        const exportOptions = {
+            format: 'detailed', // 'summary', 'quarterly', 'detailed'
+            includeMetadata: true,
+            groupBy: 'none' // 'quarter', 'division', 'none'
+        };
 
         // Utility function for safe data access
         function safeGetValue(value, fallback = 'N/A') {
@@ -944,6 +999,7 @@
                 loadAllReports();
                 setupEventListeners();
                 setupDefaultDates();
+                setupEnhancedExportListeners();
             }
         });
 
@@ -1130,8 +1186,6 @@
         function setupEventListeners() {
             logoutBtn.addEventListener('click', handleLogout);
             closeModal.addEventListener('click', closePdfModal);
-            exportBtn.addEventListener('click', exportToCSV);
-            exportAllBtn.addEventListener('click', exportAllData);
             
             // Enhanced Sorting with visual feedback
             document.querySelectorAll('.sortable').forEach(th => {
@@ -1214,6 +1268,46 @@
                     }
                 }
             });
+        }
+
+        // Setup enhanced export listeners
+        function setupEnhancedExportListeners() {
+            // Enhanced Export Current Data - Export ALL filtered data, not just current page
+            exportBtn.addEventListener('click', () => {
+                exportToCSV({
+                    format: 'detailed',
+                    includeMetadata: false,
+                    dataSource: 'filtered'  // Changed from 'current' to 'filtered'
+                });
+            });
+            
+            // Enhanced Export All Data
+            exportAllBtn.addEventListener('click', exportAllData);
+            
+            // Export option buttons (commented out but kept for future use)
+            if (exportSummaryBtn) {
+                exportSummaryBtn.addEventListener('click', () => {
+                    exportWithOptions({ format: 'summary', dataSource: 'current' });
+                });
+            }
+            
+            if (exportQuarterlyBtn) {
+                exportQuarterlyBtn.addEventListener('click', () => {
+                    exportWithOptions({ format: 'quarterly', dataSource: 'current' });
+                });
+            }
+            
+            if (exportDetailedBtn) {
+                exportDetailedBtn.addEventListener('click', () => {
+                    exportWithOptions({ format: 'detailed', dataSource: 'current' });
+                });
+            }
+            
+            if (exportAllDetailedBtn) {
+                exportAllDetailedBtn.addEventListener('click', () => {
+                    exportWithOptions({ format: 'detailed', dataSource: 'all' });
+                });
+            }
         }
 
         // Set active quick action button
@@ -1538,8 +1632,83 @@
         }
 
         // =========================================================================
-        // EXPORT ALL DATA FUNCTION - Fetches complete dataset from Firestore
+        // ENHANCED CSV EXPORT FUNCTIONALITY
         // =========================================================================
+
+        // Enhanced export function with options
+        function exportWithOptions(options = {}) {
+            const mergedOptions = { ...exportOptions, ...options };
+            
+            if (mergedOptions.format === 'summary') {
+                exportSummaryReport(mergedOptions);
+            } else if (mergedOptions.format === 'quarterly') {
+                exportQuarterlySummary(mergedOptions);
+            } else {
+                const reports = mergedOptions.dataSource === 'all' ? allReports : currentReports;
+                exportDetailedReport(reports, mergedOptions);
+            }
+        }
+
+        // Enhanced Export Current Data with ALL filtered data
+        function exportToCSV(options = {}) {
+            const defaultOptions = {
+                format: 'detailed',
+                includeMetadata: false,
+                groupBy: 'none',
+                dataSource: 'filtered' // 'filtered', 'current', or 'all'
+            };
+            
+            const mergedOptions = { ...defaultOptions, ...options };
+            
+            // Determine which data to export based on dataSource
+            let reportsToExport;
+            switch (mergedOptions.dataSource) {
+                case 'all':
+                    reportsToExport = allReports;
+                    break;
+                case 'filtered':
+                    reportsToExport = filteredReports;
+                    break;
+                case 'current':
+                    reportsToExport = currentReports;
+                    break;
+                default:
+                    reportsToExport = filteredReports; // Default to filtered data
+            }
+            
+            if (reportsToExport.length === 0) {
+                alert('Tiada data untuk dieksport. Sila semak penapisan anda.');
+                return;
+            }
+
+            // Show loading state for export button
+            const originalText = exportBtn.textContent;
+            exportBtn.disabled = true;
+            exportBtn.innerHTML = '<span class="export-loading"></span>Menyediakan Eksport...';
+
+            try {
+                // Validate data before export
+                validateExportData(reportsToExport);
+                
+                // Show export summary in console
+                showExportSummary(reportsToExport, mergedOptions);
+                
+                // Perform the export
+                exportDetailedReport(reportsToExport, mergedOptions);
+                
+            } catch (error) {
+                console.error('Export validation failed:', error);
+                alert(`Eksport gagal: ${error.message}`);
+            } finally {
+                // Reset button state
+                setTimeout(() => {
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = originalText;
+                }, 1000);
+            }
+        }
+
+        // Enhanced Export All Data
         function exportAllData() {
             const originalText = exportAllBtn.textContent;
             
@@ -1547,7 +1716,7 @@
             exportAllBtn.disabled = true;
             exportAllBtn.innerHTML = '<span class="export-loading"></span>Exporting All Data...';
             
-            // Fetch ALL data from Firestore without pagination/filters
+            // Fetch ALL data from Firestore
             db.collection('kkpReports')
                 .orderBy('createdAt', 'desc')
                 .get()
@@ -1558,15 +1727,21 @@
                         return;
                     }
                     
-                    const allReports = [];
+                    const allReportsData = [];
                     querySnapshot.forEach((doc) => {
                         const report = doc.data();
                         report.id = doc.id;
-                        allReports.push(report);
+                        allReportsData.push(report);
                     });
                     
-                    // Generate CSV with all data
-                    generateCompleteCsv(allReports, 'Laporan_KKP_Data_Lengkap');
+                    // Export with enhanced options
+                    const options = {
+                        dataSource: 'all',
+                        includeMetadata: true,
+                        format: 'detailed'
+                    };
+                    
+                    exportDetailedReport(allReportsData, options);
                     resetExportAllButton(originalText);
                     
                 })
@@ -1577,22 +1752,47 @@
                 });
         }
 
-        function resetExportAllButton(originalText) {
-            exportAllBtn.disabled = false;
-            exportAllBtn.textContent = originalText;
+        // Show export summary before download
+        function showExportSummary(reports, options) {
+            const totalRecords = reports.length;
+            const totalAccidents = reports.reduce((sum, report) => sum + calculateExportTotal(report), 0);
+            
+            const dataSourceText = options.dataSource === 'all' ? 'Semua Data' : 
+                                  options.dataSource === 'filtered' ? 'Data Terfilter' : 'Data Halaman Semasa';
+            
+            console.log(`
+🎯 Eksport Siap!
+
+Butiran Eksport:
+- Sumber Data: ${dataSourceText}
+- Jumlah Rekod: ${totalRecords}
+- Jumlah Keseluruhan: ${totalAccidents}
+- Format: ${options.format}
+
+Fail CSV akan dimuat turun secara automatik.
+            `);
         }
 
-        // Generate CSV with complete dataset
-        function generateCompleteCsv(reports, filenamePrefix = 'Laporan_KKP') {
+        // 1. Detailed Report Export (Enhanced)
+        function exportDetailedReport(reports, options = {}) {
             const csvRows = [];
+            const timestamp = new Date();
+            const filters = getCurrentFilters();
             
-            // Title and headers
-            csvRows.push(',,,,LAPORAN KKP - DATA LENGKAP (SEMUA REKOD)');
+            // Title and headers with enhanced information
+            csvRows.push(',,,,LAPORAN KKP - DATA TERPERINCI');
             csvRows.push(',,,,');
-            csvRows.push(`,,,,"Total Records: ${reports.length}"`);
+            csvRows.push(`",,,,Dijana pada: ${timestamp.toLocaleString('ms-MY')}"`);
+            csvRows.push(`",,,,Jumlah Rekod: ${reports.length}"`);
+            
+            // Add filter information if any filters are active
+            const activeFilters = getActiveFilterInfo(filters);
+            if (activeFilters) {
+                csvRows.push(`",,,,Filter: ${activeFilters}"`);
+            }
             csvRows.push(',,,,');
             
-            // Main headers
+            // Enhanced headers with better grouping - UPDATED (removed Jumlah column)
             const headers = [
                 'No',
                 'Bahagian/Unit',
@@ -1620,26 +1820,34 @@
                 'D3. Jumlah Taklimat/Toolbox',
                 'D4. Jumlah Pemeriksaan KKP',
                 'D5. Pelaporan UAUC',
-                'D6. Lain-lain Aktiviti KKP',
-                // Jumlah column
-                'Jumlah',
-                // Additional metadata
-                'ID Dokumen',
-                'Tarikh Dicipta'
+                'D6. Lain-lain Aktiviti KKP'
+                // REMOVED: 'Jumlah' column
             ];
+            
+            // Add metadata columns if requested
+            if (options.includeMetadata) {
+                headers.push('ID Dokumen', 'Tarikh Dicipta', 'Tarikh Kemaskini');
+            }
             
             csvRows.push(headers.join(','));
             
-            // Add data rows for ALL reports
+            // Add data rows with validation
+            let validReportsCount = 0;
             reports.forEach((report, index) => {
-                // Calculate total for Jumlah column
+                if (!isValidReport(report)) {
+                    console.warn('Skipping invalid report:', report.id);
+                    return;
+                }
+                validReportsCount++;
+                
+                const displayIndex = options.dataSource === 'all' ? index + 1 : getGlobalIndex(index);
                 const total = calculateExportTotal(report);
                 
                 const row = [
-                    index + 1, // Sequential number for all records
+                    displayIndex,
                     escapeCsvValue(report.division),
                     escapeCsvValue(report.quarter),
-                    escapeCsvValue(report.reportDate),
+                    escapeCsvValue(formatDateForExport(report.reportDate)),
                     escapeCsvValue(report.certifierName),
                     // Section A: BILANGAN only
                     safeGetValue(report.totalWorkers, '0'),
@@ -1662,132 +1870,374 @@
                     safeGetValue(report.briefings, '0'),
                     safeGetValue(report.inspections, '0'),
                     safeGetValue(report.uauc, '0'),
-                    safeGetValue(report.otherActivities, '0'),
-                    // Jumlah column
-                    total,
-                    // Additional metadata
-                    escapeCsvValue(report.id),
-                    escapeCsvValue(report.createdAt ? new Date(report.createdAt.seconds * 1000).toISOString() : 'N/A')
+                    safeGetValue(report.otherActivities, '0')
+                    // REMOVED: total calculation for Jumlah column
+                ];
+                
+                // Add metadata if requested
+                if (options.includeMetadata) {
+                    row.push(
+                        escapeCsvValue(report.id),
+                        escapeCsvValue(formatTimestamp(report.createdAt)),
+                        escapeCsvValue(formatTimestamp(report.updatedAt))
+                    );
+                }
+                
+                csvRows.push(row.join(','));
+            });
+            
+            // Add enhanced summary statistics
+            addEnhancedSummary(csvRows, reports);
+            
+            // Add data quality information
+            csvRows.push(',,,,');
+            csvRows.push(`"Rekod Valid","${validReportsCount}","Rekod Tidak Valid","${reports.length - validReportsCount}","Jumlah","${reports.length}"`);
+            
+            const filename = generateExportFilename('Laporan_KKP_Data_Terperinci', filters, options);
+            createAndDownloadCsv(csvRows, filename);
+        }
+
+        // 2. Summary Report Export
+        function exportSummaryReport(options = {}) {
+            const reports = options.dataSource === 'all' ? allReports : currentReports;
+            const csvRows = [];
+            const timestamp = new Date();
+            const filters = getCurrentFilters();
+            
+            csvRows.push(',,,,RINGKASAN LAPORAN KKP');
+            csvRows.push(',,,,');
+            csvRows.push(`",,,,Dijana pada: ${timestamp.toLocaleString('ms-MY')}"`);
+            csvRows.push(`",,,,Jumlah Rekod: ${reports.length}"`);
+            
+            const activeFilters = getActiveFilterInfo(filters);
+            if (activeFilters) {
+                csvRows.push(`",,,,Filter: ${activeFilters}"`);
+            }
+            csvRows.push(',,,,');
+            
+            // Summary headers
+            const headers = [
+                'Bahagian/Unit',
+                'Suku',
+                'Tarikh Laporan',
+                'Kematian',
+                'Kemalangan Parah',
+                'Jumlah Kemalangan',
+                'Pegawai Mengaku'
+            ];
+            
+            csvRows.push(headers.join(','));
+            
+            // Summary data
+            reports.forEach((report) => {
+                if (!isValidReport(report)) return;
+                
+                const totalAccidents = calculateExportTotal(report);
+                const row = [
+                    escapeCsvValue(report.division),
+                    escapeCsvValue(report.quarter),
+                    escapeCsvValue(formatDateForExport(report.reportDate)),
+                    safeGetValue(report.deathCases, '0'),
+                    safeGetValue(report.severeAccidents, '0'),
+                    totalAccidents,
+                    escapeCsvValue(report.certifierName)
                 ];
                 
                 csvRows.push(row.join(','));
             });
             
-            // Add summary row
-            csvRows.push(',,,,');
-            csvRows.push(',,,,SUMMARY');
-            csvRows.push(`"Total Reports","${reports.length}",,,`);
+            // Add quarterly summary
+            const quarterlySummary = generateQuarterlySummary(reports);
+            addQuarterlySummaryToCsv(csvRows, quarterlySummary);
             
-            const totalDeathCases = reports.reduce((sum, report) => sum + parseInt(safeGetValue(report.deathCases, '0')), 0);
-            const totalSevereAccidents = reports.reduce((sum, report) => sum + parseInt(safeGetValue(report.severeAccidents, '0')), 0);
-            const totalAccidents = reports.reduce((sum, report) => sum + calculateExportTotal(report), 0);
-            
-            csvRows.push(`"Total Death Cases","${totalDeathCases}",,,`);
-            csvRows.push(`"Total Severe Accidents","${totalSevereAccidents}",,,`);
-            csvRows.push(`"Total All Incidents","${totalAccidents}",,,`);
-            
-            createAndDownloadCsv(csvRows, filenamePrefix);
+            const filename = generateExportFilename('Ringkasan_KKP', filters, options);
+            createAndDownloadCsv(csvRows, filename);
         }
 
-        // =========================================================================
-        // QUARTERLY SUMMARY CSV EXPORT FUNCTION (Based on Laporan KKP.xlsx)
-        // =========================================================================
-        function exportToCSV() {
-            if (currentReports.length === 0) {
-                alert('No data to export');
-                return;
-            }
-            
+        // 3. Quarterly Summary Export
+        function exportQuarterlySummary(options = {}) {
+            const reports = options.dataSource === 'all' ? allReports : currentReports;
             const csvRows = [];
+            const timestamp = new Date();
+            const filters = getCurrentFilters();
             
-            // Title and headers
-            csvRows.push(',,,,LAPORAN KKP - DATA TERPERINCI (DATA SEMASA)');
+            csvRows.push(',,,,LAPORAN KUARTA KKP');
             csvRows.push(',,,,');
-            csvRows.push(`,,,,"Current View: ${currentReports.length} records"`);
+            csvRows.push(`",,,,Dijana pada: ${timestamp.toLocaleString('ms-MY')}"`);
+            csvRows.push(`",,,,Jumlah Rekod: ${reports.length}"`);
+            
+            const activeFilters = getActiveFilterInfo(filters);
+            if (activeFilters) {
+                csvRows.push(`",,,,Filter: ${activeFilters}"`);
+            }
             csvRows.push(',,,,');
             
-            // Main headers
+            const quarterlyData = generateQuarterlySummary(reports);
+            
+            // Quarterly headers
             const headers = [
-                'No',
-                'Bahagian/Unit',
-                'Suku', 
-                'Tarikh Laporan',
-                'Pegawai Mengaku',
-                // Section A: STATISTIK - BILANGAN only
-                'A1. Jumlah Bilangan Pekerja',
-                'A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan',
-                // Section B: REKOD KES KEMALANGAN - BILANGAN KES only
-                'B1.1 Kematian',
-                'B1.2 Kemalangan Parah (Cuti Sakit ≥ 5 Hari)',
-                'B2.1 Kes Rawatan Perubatan',
-                'B2.2 Kes Rawatan Kecil (First Aid)',
-                'B2.3 Penyakit Pekerjaan',
-                'B3.1 Kebakaran',
-                'B3.2 Kerosakan Harta Benda',
-                'B3.3 Kemalangan dalam Perjalanan',
-                'B3.4 Kejadian Hampir (Near Miss)',
-                // Section C: REKOD KES BERKAITAN KESIHATAN - BILANGAN KES only
-                'C1. Kes Penyakit Berjangkit',
-                // Section D: PROGRAM KKP - BILANGAN only
-                'D1. Jumlah Mesyuarat KKP',
-                'D2. Jumlah Latihan KKP',
-                'D3. Jumlah Taklimat/Toolbox',
-                'D4. Jumlah Pemeriksaan KKP',
-                'D5. Pelaporan UAUC',
-                'D6. Lain-lain Aktiviti KKP',
-                // Jumlah column
-                'Jumlah'
+                'Suku',
+                'Bilangan Laporan',
+                'Kematian',
+                'Kemalangan Parah',
+                'Rawatan Perubatan',
+                'First Aid',
+                'Penyakit Pekerjaan',
+                'Jumlah Keseluruhan'
             ];
             
             csvRows.push(headers.join(','));
             
-            // Add data rows
-            currentReports.forEach((report, index) => {
-                const startIndex = (currentPage - 1) * entriesPerPage;
-                const globalIndex = startIndex + index + 1;
-                
-                // Calculate total for Jumlah column
-                const total = calculateExportTotal(report);
-                
+            // Quarterly data
+            Object.entries(quarterlyData).forEach(([quarter, data]) => {
+                const total = calculateQuarterlyTotal(data);
                 const row = [
-                    globalIndex,
-                    escapeCsvValue(report.division),
-                    escapeCsvValue(report.quarter),
-                    escapeCsvValue(report.reportDate),
-                    escapeCsvValue(report.certifierName),
-                    // Section A: BILANGAN only
-                    safeGetValue(report.totalWorkers, '0'),
-                    safeGetValue(report.sickLeave, '0'),
-                    // Section B: BILANGAN KES only  
-                    safeGetValue(report.deathCases, '0'),
-                    safeGetValue(report.severeAccidents, '0'),
-                    safeGetValue(report.medicalCases, '0'),
-                    safeGetValue(report.firstAidCases, '0'),
-                    safeGetValue(report.occupationalDisease, '0'),
-                    safeGetValue(report.fireCases, '0'),
-                    safeGetValue(report.propertyDamage, '0'),
-                    safeGetValue(report.commutingAccidents, '0'),
-                    safeGetValue(report.nearMiss, '0'),
-                    // Section C: BILANGAN KES only
-                    safeGetValue(report.infectiousDisease, '0'),
-                    // Section D: BILANGAN only
-                    safeGetValue(report.meetings, '0'),
-                    safeGetValue(report.trainings, '0'),
-                    safeGetValue(report.briefings, '0'),
-                    safeGetValue(report.inspections, '0'),
-                    safeGetValue(report.uauc, '0'),
-                    safeGetValue(report.otherActivities, '0'),
-                    // Jumlah column
+                    escapeCsvValue(quarter),
+                    data.reports,
+                    data.deathCases,
+                    data.severeAccidents,
+                    data.medicalCases,
+                    data.firstAidCases,
+                    data.occupationalDisease,
                     total
                 ];
                 
                 csvRows.push(row.join(','));
             });
             
-            createAndDownloadCsv(csvRows, 'Laporan_KKP_Data_Terperinci');
+            // Add overall totals
+            addQuarterlyTotalSummary(csvRows, quarterlyData);
+            
+            const filename = generateExportFilename('Laporan_Kuarta_KKP', filters, options);
+            createAndDownloadCsv(csvRows, filename);
         }
 
-        // New function to calculate total for Jumlah column
+        // =========================================================================
+        // HELPER FUNCTIONS
+        // =========================================================================
+
+        // Enhanced data validation
+        function validateExportData(reports) {
+            if (!reports || reports.length === 0) {
+                throw new Error('Tiada data untuk dieksport');
+            }
+            
+            const invalidReports = reports.filter(report => !isValidReport(report));
+            if (invalidReports.length === reports.length) {
+                throw new Error('Semua data tidak valid untuk dieksport');
+            }
+            
+            return true;
+        }
+
+        function isValidReport(report) {
+            return report && 
+                   report.division && 
+                   report.quarter && 
+                   report.reportDate &&
+                   report.certifierName;
+        }
+
+        // Enhanced summary statistics - UPDATED VERSION
+        function addEnhancedSummary(csvRows, reports) {
+            if (reports.length === 0) return;
+            
+            csvRows.push(',,,,');
+            csvRows.push(',,,,STATISTIK TERPERINCI');
+            csvRows.push(',,,,');
+            
+            const summaries = {
+                'Total Laporan': reports.length,
+                'Total Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan': sumField(reports, 'sickLeave'),
+                'Total Kematian': sumField(reports, 'deathCases'),
+                'Total Kemalangan Parah': sumField(reports, 'severeAccidents'),
+                'Total Rawatan Perubatan': sumField(reports, 'medicalCases'),
+                'Total Rawatan Kecil (First Aid)': sumField(reports, 'firstAidCases'),
+                'Total Penyakit Pekerjaan': sumField(reports, 'occupationalDisease'),
+                'Total Kebakaran': sumField(reports, 'fireCases'),
+                'Total Kerosakan Harta Benda': sumField(reports, 'propertyDamage'),
+                'Total Kemalangan Perjalanan': sumField(reports, 'commutingAccidents'),
+                'Total Kejadian Hampir': sumField(reports, 'nearMiss'),
+                'Total Penyakit Berjangkit': sumField(reports, 'infectiousDisease'),
+                'Total Jumlah Mesyuarat KKP': sumField(reports, 'meetings'),
+                'Total Jumlah Latihan KKP': sumField(reports, 'trainings'),
+                'Total Jumlah Taklimat/Toolbox': sumField(reports, 'briefings'),
+                'Total Jumlah Pemeriksaan KKP (Pemeriksaan Dalaman & Luaran)': sumField(reports, 'inspections'),
+                'Total Pelaporan Unsafe Act Unsafe Condition (UAUC)': sumField(reports, 'uauc'),
+                'Total Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP)': sumField(reports, 'otherActivities'),
+                'Total Jumlah Keseluruhan': reports.reduce((sum, report) => sum + calculateExportTotal(report), 0)
+            };
+            
+            Object.entries(summaries).forEach(([label, value]) => {
+                csvRows.push(`"${label}","${value}",,,`);
+            });
+            
+            // REMOVED: Division breakdown section
+        }
+
+        // Quarterly aggregation
+        function generateQuarterlySummary(reports) {
+            const quarterlyData = {};
+            
+            reports.forEach(report => {
+                if (!isValidReport(report)) return;
+                
+                const quarter = report.quarter;
+                if (!quarterlyData[quarter]) {
+                    quarterlyData[quarter] = {
+                        reports: 0,
+                        deathCases: 0,
+                        severeAccidents: 0,
+                        medicalCases: 0,
+                        firstAidCases: 0,
+                        occupationalDisease: 0,
+                        fireCases: 0,
+                        propertyDamage: 0,
+                        commutingAccidents: 0,
+                        nearMiss: 0,
+                        infectiousDisease: 0
+                    };
+                }
+                
+                quarterlyData[quarter].reports++;
+                quarterlyData[quarter].deathCases += parseInt(safeGetValue(report.deathCases, '0'));
+                quarterlyData[quarter].severeAccidents += parseInt(safeGetValue(report.severeAccidents, '0'));
+                quarterlyData[quarter].medicalCases += parseInt(safeGetValue(report.medicalCases, '0'));
+                quarterlyData[quarter].firstAidCases += parseInt(safeGetValue(report.firstAidCases, '0'));
+                quarterlyData[quarter].occupationalDisease += parseInt(safeGetValue(report.occupationalDisease, '0'));
+                quarterlyData[quarter].fireCases += parseInt(safeGetValue(report.fireCases, '0'));
+                quarterlyData[quarter].propertyDamage += parseInt(safeGetValue(report.propertyDamage, '0'));
+                quarterlyData[quarter].commutingAccidents += parseInt(safeGetValue(report.commutingAccidents, '0'));
+                quarterlyData[quarter].nearMiss += parseInt(safeGetValue(report.nearMiss, '0'));
+                quarterlyData[quarter].infectiousDisease += parseInt(safeGetValue(report.infectiousDisease, '0'));
+            });
+            
+            return quarterlyData;
+        }
+
+        function addQuarterlySummaryToCsv(csvRows, quarterlyData) {
+            csvRows.push(',,,,');
+            csvRows.push(',,,,RINGKASAN KUARTA');
+            
+            Object.entries(quarterlyData).forEach(([quarter, data]) => {
+                const total = calculateQuarterlyTotal(data);
+                csvRows.push(`"${quarter}","${data.reports} laporan","${total} jumlah kes",,,`);
+            });
+        }
+
+        function addQuarterlyTotalSummary(csvRows, quarterlyData) {
+            csvRows.push(',,,,');
+            csvRows.push(',,,,JUMLAH KESELURUHAN');
+            
+            const totals = {
+                reports: 0,
+                deathCases: 0,
+                severeAccidents: 0,
+                medicalCases: 0,
+                firstAidCases: 0,
+                occupationalDisease: 0,
+                fireCases: 0,
+                propertyDamage: 0,
+                commutingAccidents: 0,
+                nearMiss: 0,
+                infectiousDisease: 0
+            };
+            
+            Object.values(quarterlyData).forEach(data => {
+                Object.keys(totals).forEach(key => {
+                    totals[key] += data[key] || 0;
+                });
+            });
+            
+            const overallTotal = calculateQuarterlyTotal(totals);
+            csvRows.push(`"Jumlah","${totals.reports}","${totals.deathCases}","${totals.severeAccidents}","${totals.medicalCases}","${totals.firstAidCases}","${totals.occupationalDisease}","${overallTotal}"`);
+        }
+
+        function calculateQuarterlyTotal(data) {
+            return (data.deathCases || 0) + (data.severeAccidents || 0) + (data.medicalCases || 0) + 
+                   (data.firstAidCases || 0) + (data.occupationalDisease || 0) + (data.fireCases || 0) + 
+                   (data.propertyDamage || 0) + (data.commutingAccidents || 0) + (data.nearMiss || 0) + 
+                   (data.infectiousDisease || 0);
+        }
+
+        // Division statistics
+        function getDivisionStatistics(reports) {
+            const divisionStats = {};
+            
+            reports.forEach(report => {
+                if (!isValidReport(report)) return;
+                
+                const division = report.division;
+                if (!divisionStats[division]) {
+                    divisionStats[division] = {
+                        reports: 0,
+                        accidents: 0
+                    };
+                }
+                
+                divisionStats[division].reports++;
+                divisionStats[division].accidents += calculateExportTotal(report);
+            });
+            
+            return divisionStats;
+        }
+
+        // Utility functions
+        function sumField(reports, field) {
+            return reports.reduce((sum, report) => sum + parseInt(safeGetValue(report[field], '0')), 0);
+        }
+
+        function getGlobalIndex(index) {
+            const startIndex = (currentPage - 1) * entriesPerPage;
+            return startIndex + index + 1;
+        }
+
+        function formatDateForExport(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('ms-MY');
+        }
+
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleString('ms-MY');
+        }
+
+        function getActiveFilterInfo(filters) {
+            const activeFilters = [];
+            if (filters.division) activeFilters.push(`Bahagian: ${filters.division}`);
+            if (filters.quarter) activeFilters.push(`Suku: ${filters.quarter}`);
+            if (filters.search) activeFilters.push(`Carian: "${filters.search}"`);
+            if (filters.startDate || filters.endDate) {
+                const dateRange = [];
+                if (filters.startDate) dateRange.push(formatDateForExport(filters.startDate));
+                if (filters.endDate) dateRange.push(formatDateForExport(filters.endDate));
+                activeFilters.push(`Tempoh: ${dateRange.join(' - ')}`);
+            }
+            
+            return activeFilters.join(', ');
+        }
+
+        function generateExportFilename(prefix, filters, options) {
+            const timestamp = new Date().toISOString().split('T')[0];
+            let sourceInfo = '';
+            
+            // Add data source information
+            if (options.dataSource === 'all') {
+                sourceInfo = '_SemuaData';
+            } else if (options.dataSource === 'filtered') {
+                sourceInfo = '_DataTerfilter';
+                // Add filter info for filtered data
+                if (filters.division) sourceInfo += `_${filters.division.replace(/\s+/g, '')}`;
+                if (filters.quarter) sourceInfo += `_${filters.quarter.replace(/\s+/g, '')}`;
+            } else {
+                sourceInfo = '_HalamanSemasa';
+            }
+            
+            return `${prefix}${sourceInfo}_${timestamp}`;
+        }
+
+        // Keep this function for summary statistics calculation
         function calculateExportTotal(report) {
             const numericFields = [
                 'totalWorkers', 'sickLeave',                    // Section A
@@ -1811,8 +2261,8 @@
             
             return total;
         }
-
-        // Proper CSV value escaping
+        
+        // Enhanced CSV value escaping
         function escapeCsvValue(value) {
             if (value === null || value === undefined) return '';
             
@@ -1827,7 +2277,7 @@
         }
 
         // Create and trigger download
-        function createAndDownloadCsv(csvRows, filenamePrefix = 'Laporan_KKP') {
+        function createAndDownloadCsv(csvRows, filename) {
             const csvContent = csvRows.join('\n');
             const blob = new Blob([csvContent], { 
                 type: 'text/csv;charset=utf-8;' 
@@ -1836,11 +2286,7 @@
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            
-            // Generate filename with timestamp
-            const timestamp = new Date().toISOString().split('T')[0];
-            link.setAttribute('download', `${filenamePrefix}_${timestamp}.csv`);
-            
+            link.setAttribute('download', `${filename}.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
@@ -1848,6 +2294,12 @@
             
             // Clean up URL object
             setTimeout(() => URL.revokeObjectURL(url), 100);
+        }
+
+        // Reset export button
+        function resetExportAllButton(originalText) {
+            exportAllBtn.disabled = false;
+            exportAllBtn.textContent = originalText;
         }
     </script>
 </body>
