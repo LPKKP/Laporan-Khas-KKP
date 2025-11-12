@@ -110,10 +110,19 @@
             font-size: 14px;
             cursor: pointer;
             user-select: none;
+            transition: background-color 0.3s;
         }
         
         .data-table th.sortable:hover {
             background-color: #3a5cd5;
+        }
+        
+        .data-table th.sort-asc {
+            background-color: #2a4cb3;
+        }
+        
+        .data-table th.sort-desc {
+            background-color: #2a4cb3;
         }
         
         .data-table th .sort-indicator {
@@ -152,6 +161,20 @@
             font-size: 16px;
             width: 300px;
             max-width: 100%;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #4a6cf7;
+            box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+        }
+        
+        .search-box.loading {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234a6cf7" width="18px" height="18px"><path d="M12 4V2A10 10 0 002 12h2a8 8 0 018-8z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
         }
         
         .entries-info {
@@ -303,6 +326,38 @@
             border-radius: 5px;
             font-size: 14px;
             background: white;
+            transition: border-color 0.3s;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: #4a6cf7;
+        }
+        
+        .date-range-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .date-range-separator {
+            color: #666;
+            font-weight: bold;
+        }
+        
+        /* Enhanced Search Results Indicator */
+        .search-results-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #0066cc;
+        }
+        
+        .search-results-info strong {
+            color: #004d99;
         }
         
         /* PDF Viewer Modal Styles */
@@ -488,6 +543,34 @@
             to { transform: rotate(360deg); }
         }
         
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        
+        .action-btn:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+        
+        .action-btn.active {
+            background: #4a6cf7;
+        }
+        
         @media (max-width: 1024px) {
             .data-container {
                 max-width: 95%;
@@ -508,6 +591,19 @@
                 padding: 6px 10px;
                 font-size: 12px;
                 min-width: 70px;
+            }
+            
+            .filter-controls {
+                gap: 8px;
+            }
+            
+            .date-range-container {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .date-range-separator {
+                display: none;
             }
         }
         
@@ -587,6 +683,15 @@
             .confirmation-buttons {
                 flex-direction: column;
             }
+            
+            .quick-actions {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+                text-align: center;
+            }
         }
         
         @media (max-width: 480px) {
@@ -664,6 +769,14 @@
             <p>View and manage all submitted KKP reports</p>
         </div>
         
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="action-btn" id="sortNewestBtn">Sort: Newest First</button>
+            <button class="action-btn" id="sortOldestBtn">Sort: Oldest First</button>
+            <button class="action-btn" id="sortDivisionBtn">Sort: Division A-Z</button>
+            <button class="action-btn" id="clearFiltersBtn">Clear All Filters</button>
+        </div>
+        
         <!-- Enhanced Filter Controls -->
         <div class="filter-controls">
             <select class="filter-select" id="divisionFilter">
@@ -671,15 +784,29 @@
             </select>
             <select class="filter-select" id="quarterFilter">
                 <option value="">All Quarters</option>
-                <option value="Q1">Q1</option>
-                <option value="Q2">Q2</option>
-                <option value="Q3">Q3</option>
-                <option value="Q4">Q4</option>
+                <option value="Suku 1">Suku 1</option>
+                <option value="Suku 2">Suku 2</option>
+                <option value="Suku 3">Suku 3</option>
+                <option value="Suku 4">Suku 4</option>
             </select>
-            <input type="month" class="filter-select" id="dateFilter">
+            
+            <!-- Date Range Filter -->
+            <div class="date-range-container">
+                <input type="date" class="filter-select" id="startDateFilter" placeholder="Start Date">
+                <span class="date-range-separator">to</span>
+                <input type="date" class="filter-select" id="endDateFilter" placeholder="End Date">
+            </div>
+            
             <button class="export-btn" id="exportBtn">Export Current Data</button>
             <button class="export-all-btn" id="exportAllBtn">Export All Data</button>
             <button class="clear-btn" id="clearDataBtn">Clear All Data</button>
+        </div>
+        
+        <!-- Search Results Info -->
+        <div id="searchResultsInfo" class="search-results-info" style="display: none;">
+            Showing <strong id="resultsCount">0</strong> of <strong id="totalCount">0</strong> reports
+            <span id="searchQueryInfo" style="display: none;"> for "<strong id="queryText"></strong>"</span>
+            <span id="dateRangeInfo" style="display: none;"> within selected date range</span>
         </div>
         
         <div class="table-controls">
@@ -707,12 +834,13 @@
                     <th class="sortable" data-sort="severeAccidents">Kemalangan Parah <span class="sort-indicator">↕</span></th>
                     <th class="sortable" data-sort="totalAccidents">Jumlah Kemalangan <span class="sort-indicator">↕</span></th>
                     <th class="sortable" data-sort="certifierName">Di sediakan oleh <span class="sort-indicator">↕</span></th>
+                    <th class="sortable" data-sort="reportDate">Tarikh <span class="sort-indicator">↕</span></th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
                 <tr>
-                    <td colspan="8" class="loading">Loading reports...</td>
+                    <td colspan="9" class="loading">Loading reports...</td>
                 </tr>
             </tbody>
         </table>
@@ -754,7 +882,20 @@
         const exportAllBtn = document.getElementById('exportAllBtn');
         const divisionFilter = document.getElementById('divisionFilter');
         const quarterFilter = document.getElementById('quarterFilter');
-        const dateFilter = document.getElementById('dateFilter');
+        const startDateFilter = document.getElementById('startDateFilter');
+        const endDateFilter = document.getElementById('endDateFilter');
+        const searchResultsInfo = document.getElementById('searchResultsInfo');
+        const resultsCount = document.getElementById('resultsCount');
+        const totalCount = document.getElementById('totalCount');
+        const searchQueryInfo = document.getElementById('searchQueryInfo');
+        const queryText = document.getElementById('queryText');
+        const dateRangeInfo = document.getElementById('dateRangeInfo');
+        
+        // Quick action buttons
+        const sortNewestBtn = document.getElementById('sortNewestBtn');
+        const sortOldestBtn = document.getElementById('sortOldestBtn');
+        const sortDivisionBtn = document.getElementById('sortDivisionBtn');
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
         
         // Clear data elements
         const clearDataBtn = document.getElementById('clearDataBtn');
@@ -762,33 +903,35 @@
         const confirmClearBtn = document.getElementById('confirmClearBtn');
         const cancelClearBtn = document.getElementById('cancelClearBtn');
         
-        // Server-side pagination variables
+        // Client-side filtering variables
         let allReports = [];
+        let filteredReports = [];
         let currentReports = [];
         let currentPage = 1;
         let entriesPerPage = 10;
         let sortColumn = 'createdAt';
         let sortDirection = 'desc';
-        let lastVisibleDoc = null;
-        let firstVisibleDoc = null;
         let totalReports = 0;
         let searchTimeout = null;
+        let isSearching = false;
 
         // Utility function for safe data access
         function safeGetValue(value, fallback = 'N/A') {
             return value || value === 0 ? value : fallback;
         }
 
-        // Debounce function for search
-        function debounce(func, wait) {
+        // Enhanced debounce function for search
+        function debounce(func, wait, immediate) {
             let timeout;
             return function executedFunction(...args) {
                 const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
+                    timeout = null;
+                    if (!immediate) func(...args);
                 };
+                const callNow = immediate && !timeout;
                 clearTimeout(timeout);
                 timeout = setTimeout(later, wait);
+                if (callNow) func(...args);
             };
         }
 
@@ -798,47 +941,63 @@
             if (!savedEmail) {
                 window.location.href = 'login.html';
             } else {
-                initializePagination();
+                loadAllReports();
                 setupEventListeners();
+                setupDefaultDates();
             }
         });
 
-        // Initialize pagination and load data
-        function initializePagination() {
-            // Get total count
-            db.collection('kkpReports').get().then((snapshot) => {
-                totalReports = snapshot.size;
-                loadDivisionFilter();
-                loadReports(1);
-            }).catch((error) => {
-                console.error('Error getting total count: ', error);
-                loadDivisionFilter();
-                loadReports(1);
-            });
+        // Set default date range (last 30 days)
+        function setupDefaultDates() {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            
+            startDateFilter.valueAsDate = startDate;
+            endDateFilter.valueAsDate = endDate;
         }
 
-        // Load division filter separately
-        function loadDivisionFilter() {
+        // Load all reports at once for client-side filtering
+        function loadAllReports() {
+            tableBody.innerHTML = '<tr><td colspan="9" class="loading">Loading reports...</td></tr>';
+            
             db.collection('kkpReports')
-                .orderBy('division')
+                .orderBy('createdAt', 'desc')
                 .get()
                 .then((querySnapshot) => {
-                    const divisions = new Set();
+                    allReports = [];
                     querySnapshot.forEach((doc) => {
-                        const division = doc.data().division;
-                        if (division) divisions.add(division);
+                        const report = doc.data();
+                        report.id = doc.id;
+                        allReports.push(report);
                     });
                     
-                    updateDivisionFilter(divisions);
-                })
-                .catch((error) => {
-                    console.error('Error loading divisions: ', error);
+                    totalReports = allReports.length;
+                    loadDivisionFilter();
+                    applyFilters(); // Apply initial filters
+                    updateSearchResultsInfo();
+                    
+                }).catch((error) => {
+                    console.error('Error loading reports: ', error);
+                    tableBody.innerHTML = '<tr><td colspan="9" class="error-message">Error loading reports. Please try again.</td></tr>';
                 });
+        }
+
+        // Load division filter from all reports
+        function loadDivisionFilter() {
+            const divisions = new Set();
+            allReports.forEach(report => {
+                const division = report.division;
+                if (division) divisions.add(division);
+            });
+            
+            updateDivisionFilter(divisions);
         }
 
         function updateDivisionFilter(divisions) {
             divisionFilter.innerHTML = '<option value="">All Divisions</option>';
-            divisions.forEach(division => {
+            const divisionsArray = Array.from(divisions).sort();
+            divisionsArray.forEach(division => {
                 const option = document.createElement('option');
                 option.value = division;
                 option.textContent = division;
@@ -846,84 +1005,125 @@
             });
         }
 
-        // Server-side pagination: Load reports with filters
-        function loadReports(page = 1) {
-            tableBody.innerHTML = '<tr><td colspan="8" class="loading">Loading reports...</td></tr>';
-            
-            const filters = getCurrentFilters();
-            let query = db.collection('kkpReports');
-            
-            // Apply filters
-            if (filters.division) {
-                query = query.where('division', '==', filters.division);
-            }
-            if (filters.quarter) {
-                query = query.where('quarter', '==', filters.quarter);
-            }
-            if (filters.date) {
-                // For date filtering, you might need to adjust based on your date field
-                query = query.where('reportDate', '>=', filters.date + '-01')
-                            .where('reportDate', '<=', filters.date + '-31');
-            }
-            
-            // Apply sorting
-            query = query.orderBy('createdAt', 'desc');
-            
-            // Handle pagination
-            if (page > currentPage && lastVisibleDoc) {
-                // Next page
-                query = query.startAfter(lastVisibleDoc);
-            } else if (page < currentPage) {
-                // For previous pages, reset and calculate offset
-                // Note: Firestore doesn't support direct offset, so we reset
-                lastVisibleDoc = null;
-                currentPage = 1;
-                // We'll handle this by going back to first page and navigating forward
-                // For complex previous navigation, consider alternative approaches
-            }
-            
-            query = query.limit(entriesPerPage);
-            
-            query.get().then((querySnapshot) => {
-                if (querySnapshot.empty && page > 1) {
-                    // If no results on non-first page, go back to first page
-                    currentPage = 1;
-                    loadReports(1);
-                    return;
-                }
-                
-                // Store pagination markers
-                if (!querySnapshot.empty) {
-                    lastVisibleDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-                    firstVisibleDoc = querySnapshot.docs[0];
-                }
-                
-                allReports = [];
-                querySnapshot.forEach((doc) => {
-                    const report = doc.data();
-                    report.id = doc.id;
-                    allReports.push(report);
-                });
-                
-                currentPage = page;
-                currentReports = [...allReports];
-                displayReports(currentReports);
-                
-            }).catch((error) => {
-                console.error('Error loading reports: ', error);
-                tableBody.innerHTML = '<tr><td colspan="8" class="error-message">Error loading reports. Please try again.</td></tr>';
-            });
-        }
-
         // Get current filter values
         function getCurrentFilters() {
-            const searchText = searchInput.value.toLowerCase();
+            const searchText = searchInput.value.toLowerCase().trim();
             return {
                 division: divisionFilter.value || null,
                 quarter: quarterFilter.value || null,
-                date: dateFilter.value || null,
+                startDate: startDateFilter.value || null,
+                endDate: endDateFilter.value || null,
                 search: searchText || null
             };
+        }
+
+        // Apply filters to all reports - ENHANCED VERSION
+        function applyFilters() {
+            const filters = getCurrentFilters();
+            
+            console.log('Applying filters:', filters);
+            console.log('Total reports before filtering:', allReports.length);
+            
+            // Show loading state for search
+            if (filters.search && !isSearching) {
+                isSearching = true;
+                searchInput.classList.add('loading');
+            }
+            
+            // Filter the reports based on current filters
+            filteredReports = allReports.filter(report => {
+                // Division filter
+                const matchesDivision = !filters.division || 
+                    (report.division && report.division === filters.division);
+                
+                // Quarter filter
+                const matchesQuarter = !filters.quarter || 
+                    (report.quarter && report.quarter === filters.quarter);
+                
+                // Date range filter - ENHANCED
+                let matchesDateRange = true;
+                if (filters.startDate || filters.endDate) {
+                    const reportDate = report.reportDate;
+                    if (!reportDate) {
+                        matchesDateRange = false;
+                    } else {
+                        const reportDateObj = new Date(reportDate);
+                        if (filters.startDate) {
+                            const startDateObj = new Date(filters.startDate);
+                            if (reportDateObj < startDateObj) matchesDateRange = false;
+                        }
+                        if (filters.endDate) {
+                            const endDateObj = new Date(filters.endDate);
+                            endDateObj.setHours(23, 59, 59, 999); // End of day
+                            if (reportDateObj > endDateObj) matchesDateRange = false;
+                        }
+                    }
+                }
+                
+                // Search filter - ENHANCED real-time search
+                let matchesSearch = true;
+                if (filters.search) {
+                    const searchTerms = filters.search.toLowerCase().split(' ');
+                    matchesSearch = searchTerms.every(term => 
+                        (report.division && report.division.toLowerCase().includes(term)) ||
+                        (report.quarter && report.quarter.toLowerCase().includes(term)) ||
+                        (report.certifierName && report.certifierName.toLowerCase().includes(term)) ||
+                        (report.reportDate && report.reportDate.toLowerCase().includes(term)) ||
+                        (report.id && report.id.toLowerCase().includes(term))
+                    );
+                }
+                
+                return matchesDivision && matchesQuarter && matchesDateRange && matchesSearch;
+            });
+            
+            console.log('Total reports after filtering:', filteredReports.length);
+            
+            // Remove loading state
+            if (isSearching) {
+                isSearching = false;
+                searchInput.classList.remove('loading');
+            }
+            
+            // Apply sorting
+            sortReports();
+            
+            // Reset to first page and display
+            currentPage = 1;
+            displayReports();
+            updateSearchResultsInfo();
+        }
+
+        // Update search results information
+        function updateSearchResultsInfo() {
+            if (filteredReports.length === 0 && allReports.length > 0) {
+                searchResultsInfo.style.display = 'block';
+                resultsCount.textContent = '0';
+                totalCount.textContent = allReports.length;
+                searchQueryInfo.style.display = 'none';
+                dateRangeInfo.style.display = 'none';
+            } else if (filteredReports.length < allReports.length) {
+                searchResultsInfo.style.display = 'block';
+                resultsCount.textContent = filteredReports.length;
+                totalCount.textContent = allReports.length;
+                
+                // Show search query if applicable
+                const filters = getCurrentFilters();
+                if (filters.search) {
+                    searchQueryInfo.style.display = 'inline';
+                    queryText.textContent = filters.search;
+                } else {
+                    searchQueryInfo.style.display = 'none';
+                }
+                
+                // Show date range info if applicable
+                if (filters.startDate || filters.endDate) {
+                    dateRangeInfo.style.display = 'inline';
+                } else {
+                    dateRangeInfo.style.display = 'none';
+                }
+            } else {
+                searchResultsInfo.style.display = 'none';
+            }
         }
 
         // Setup event listeners
@@ -933,7 +1133,7 @@
             exportBtn.addEventListener('click', exportToCSV);
             exportAllBtn.addEventListener('click', exportAllData);
             
-            // Sorting
+            // Enhanced Sorting with visual feedback
             document.querySelectorAll('.sortable').forEach(th => {
                 th.addEventListener('click', () => {
                     const column = th.getAttribute('data-sort');
@@ -944,26 +1144,44 @@
             // Filtering
             divisionFilter.addEventListener('change', applyFilters);
             quarterFilter.addEventListener('change', applyFilters);
-            dateFilter.addEventListener('change', applyFilters);
+            startDateFilter.addEventListener('change', applyFilters);
+            endDateFilter.addEventListener('change', applyFilters);
+            
+            // Quick Actions
+            sortNewestBtn.addEventListener('click', () => {
+                handleSort('createdAt', 'desc');
+                setActiveQuickAction(sortNewestBtn);
+            });
+            
+            sortOldestBtn.addEventListener('click', () => {
+                handleSort('createdAt', 'asc');
+                setActiveQuickAction(sortOldestBtn);
+            });
+            
+            sortDivisionBtn.addEventListener('click', () => {
+                handleSort('division', 'asc');
+                setActiveQuickAction(sortDivisionBtn);
+            });
+            
+            clearFiltersBtn.addEventListener('click', clearAllFilters);
             
             // Pagination
             document.getElementById('entriesSelect').addEventListener('change', function() {
                 entriesPerPage = parseInt(this.value);
                 currentPage = 1;
-                lastVisibleDoc = null;
-                loadReports(1);
+                displayReports();
             });
             
             document.getElementById('firstBtn').addEventListener('click', () => goToPage(1));
             document.getElementById('prevBtn').addEventListener('click', () => goToPage(currentPage - 1));
             document.getElementById('nextBtn').addEventListener('click', () => goToPage(currentPage + 1));
             document.getElementById('lastBtn').addEventListener('click', () => {
-                const totalPages = Math.ceil(totalReports / entriesPerPage);
+                const totalPages = Math.ceil(filteredReports.length / entriesPerPage);
                 goToPage(totalPages);
             });
             
-            // Search with debouncing
-            searchInput.addEventListener('keyup', debounce(function() {
+            // Enhanced Search with real-time feedback
+            searchInput.addEventListener('input', debounce(function() {
                 applyFilters();
             }, 300));
             
@@ -998,6 +1216,26 @@
             });
         }
 
+        // Set active quick action button
+        function setActiveQuickAction(activeBtn) {
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            activeBtn.classList.add('active');
+        }
+
+        // Clear all filters
+        function clearAllFilters() {
+            divisionFilter.value = '';
+            quarterFilter.value = '';
+            startDateFilter.value = '';
+            endDateFilter.value = '';
+            searchInput.value = '';
+            setupDefaultDates();
+            applyFilters();
+            setActiveQuickAction(clearFiltersBtn);
+        }
+
         function handleLogout() {
             localStorage.removeItem('userEmail');
             window.location.href = 'login.html';
@@ -1008,23 +1246,17 @@
             pdfViewer.src = '';
         }
 
-        // Apply filters and reload data
-        function applyFilters() {
-            currentPage = 1;
-            lastVisibleDoc = null;
-            loadReports(1);
-        }
-
         // Navigation functions
         function goToPage(page) {
             if (page < 1) page = 1;
             
-            const totalPages = Math.ceil(totalReports / entriesPerPage);
+            const totalPages = Math.ceil(filteredReports.length / entriesPerPage);
             if (page > totalPages) page = totalPages;
             
             if (page === currentPage) return;
             
-            loadReports(page);
+            currentPage = page;
+            displayReports();
         }
 
         // Show confirmation modal for clearing data
@@ -1090,46 +1322,56 @@
         function resetAfterClear() {
             // Reset all data
             allReports = [];
+            filteredReports = [];
             currentReports = [];
             currentPage = 1;
-            lastVisibleDoc = null;
             totalReports = 0;
             
             // Update UI
-            displayReports(currentReports);
+            displayReports();
             
             // Reset division filter
             divisionFilter.innerHTML = '<option value="">All Divisions</option>';
             
-            // Reload total count
-            initializePagination();
+            // Reload data
+            loadAllReports();
         }
 
-        // Handle sorting (client-side for current page)
-        function handleSort(column) {
-            if (sortColumn === column) {
-                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
+        // Enhanced Sorting with visual feedback
+        function handleSort(column, direction = null) {
+            if (direction) {
                 sortColumn = column;
-                sortDirection = 'asc';
+                sortDirection = direction;
+            } else {
+                if (sortColumn === column) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortColumn = column;
+                    sortDirection = 'asc';
+                }
             }
             
-            // Update sort indicators
+            // Update sort indicators and visual feedback
             document.querySelectorAll('.sortable').forEach(th => {
                 const indicator = th.querySelector('.sort-indicator');
+                th.classList.remove('sort-asc', 'sort-desc');
+                
                 if (th.getAttribute('data-sort') === sortColumn) {
                     indicator.textContent = sortDirection === 'asc' ? '↑' : '↓';
+                    th.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
                 } else {
                     indicator.textContent = '↕';
                 }
             });
             
             sortReports();
-            displayReports(currentReports);
+            displayReports();
         }
 
         function sortReports() {
-            currentReports.sort((a, b) => {
+            if (!filteredReports.length) return;
+            
+            filteredReports.sort((a, b) => {
                 let aValue = a[sortColumn];
                 let bValue = b[sortColumn];
                 
@@ -1141,6 +1383,16 @@
                     aValue = calculateTotalAccidents(a);
                     bValue = calculateTotalAccidents(b);
                 }
+                
+                // Handle date sorting
+                if (sortColumn === 'reportDate' || sortColumn === 'createdAt') {
+                    aValue = aValue ? new Date(aValue) : new Date(0);
+                    bValue = bValue ? new Date(bValue) : new Date(0);
+                }
+                
+                // Handle null/undefined values
+                if (aValue === null || aValue === undefined) aValue = '';
+                if (bValue === null || bValue === undefined) bValue = '';
                 
                 if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
                 if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
@@ -1178,21 +1430,25 @@
         }
 
         // Display reports in the table
-        function displayReports(reports) {
-            currentReports = reports;
-            
-            tableBody.innerHTML = '';
-            
-            if (reports.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8">No reports found.</td></tr>';
+        function displayReports() {
+            if (!filteredReports.length) {
+                tableBody.innerHTML = '<tr><td colspan="9">No reports found.</td></tr>';
                 updatePagination();
                 return;
             }
             
-            reports.forEach((report, index) => {
-                const globalIndex = ((currentPage - 1) * entriesPerPage) + index + 1;
+            // Calculate pagination
+            const startIndex = (currentPage - 1) * entriesPerPage;
+            const endIndex = startIndex + entriesPerPage;
+            currentReports = filteredReports.slice(startIndex, endIndex);
+            
+            tableBody.innerHTML = '';
+            
+            currentReports.forEach((report, index) => {
+                const globalIndex = startIndex + index + 1;
                 const totalAccidents = calculateTotalAccidents(report);
                 const accidentDetails = getAccidentDetails(report);
+                const reportDate = report.reportDate ? new Date(report.reportDate).toLocaleDateString('ms-MY') : 'N/A';
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1206,6 +1462,7 @@
                         <div class="accident-details">${accidentDetails}</div>
                     </td>
                     <td>${safeGetValue(report.certifierName)}</td>
+                    <td>${reportDate}</td>
                     <td>
                         <div class="button-container">
                             <button class="view-btn" data-id="${report.id}" aria-label="View PDF for ${report.division} ${report.quarter} report">View PDF</button>
@@ -1235,7 +1492,7 @@
         }
 
         function updatePagination() {
-            const totalPages = Math.ceil(totalReports / entriesPerPage);
+            const totalPages = Math.ceil(filteredReports.length / entriesPerPage);
             const pageInfo = document.getElementById('pageInfo');
             const firstBtn = document.getElementById('firstBtn');
             const prevBtn = document.getElementById('prevBtn');
@@ -1486,7 +1743,8 @@
             
             // Add data rows
             currentReports.forEach((report, index) => {
-                const globalIndex = ((currentPage - 1) * entriesPerPage) + index + 1;
+                const startIndex = (currentPage - 1) * entriesPerPage;
+                const globalIndex = startIndex + index + 1;
                 
                 // Calculate total for Jumlah column
                 const total = calculateExportTotal(report);
@@ -1552,27 +1810,6 @@
             });
             
             return total;
-        }
-
-        // Group reports by quarter and calculate totals
-        function groupReportsByQuarter(reports) {
-            const quarterlyData = {
-                'Q1': { deathCases: 0, severeAccidents: 0, totalAccidents: 0 },
-                'Q2': { deathCases: 0, severeAccidents: 0, totalAccidents: 0 },
-                'Q3': { deathCases: 0, severeAccidents: 0, totalAccidents: 0 },
-                'Q4': { deathCases: 0, severeAccidents: 0, totalAccidents: 0 }
-            };
-            
-            reports.forEach(report => {
-                const quarter = report.quarter;
-                if (quarterlyData[quarter]) {
-                    quarterlyData[quarter].deathCases += parseInt(safeGetValue(report.deathCases, 0));
-                    quarterlyData[quarter].severeAccidents += parseInt(safeGetValue(report.severeAccidents, 0));
-                    quarterlyData[quarter].totalAccidents += calculateTotalAccidents(report);
-                }
-            });
-            
-            return quarterlyData;
         }
 
         // Proper CSV value escaping
