@@ -381,9 +381,9 @@
                         <a href="#" class="btn-notice" id="viewGuideBtn">
                             <i>👁️</i> Lihat Panduan
                         </a>
-                        <!-- <a href="#" class="btn-notice download" id="downloadGuideBtn">
-                            <i>📥</i> Muat Turun
-                        </a> -->
+                        <a href="#" class="btn-notice download" id="downloadGuideBtn">
+                            <i>📥</i> Muat Turun Panduan
+                        </a>
                     </div>
                 </div>
             </div>
@@ -1099,9 +1099,19 @@
         
         // Function to handle guide viewing
         function handleGuideView() {
-            alert("Panduan akan dibuka dalam tetingkap baru. Sila pastikan pop-up tidak disekat.");
-            // In a real implementation, you would open a PDF guide here
-            // window.open('path/to/guide.pdf', '_blank');
+            // Open the PDF guide in a new tab
+            const guideUrl = 'Panduan_Laporan_KKP.pdf';
+            window.open(guideUrl, '_blank');
+        }
+        
+        // Function to handle guide downloading
+        function handleGuideDownload() {
+            // Create a temporary link to download the PDF guide
+            const guideUrl = 'Panduan_Laporan_KKP.pdf';
+            const downloadLink = document.getElementById('guideDownloadLink');
+            downloadLink.href = guideUrl;
+            downloadLink.download = 'Panduan_Laporan_KKP.pdf';
+            downloadLink.click();
         }
         
         // Set default date values
@@ -1119,6 +1129,7 @@
             document.getElementById('kkpForm').addEventListener('submit', handleFormSubmit);
             document.getElementById('downloadBtn').addEventListener('click', handleDownloadClick);
             document.getElementById('viewGuideBtn').addEventListener('click', handleGuideView);
+            document.getElementById('downloadGuideBtn').addEventListener('click', handleGuideDownload);
         }
         
         // Initialize when DOM is loaded
