@@ -973,6 +973,109 @@
             groupBy: 'none' // 'quarter', 'division', 'none'
         };
 
+        // =========================================================================
+        // ABBREVIATION SYSTEM FOR HEADERS A1 TO D6
+        // =========================================================================
+
+        // Function to create abbreviation from header text (first letters of each word)
+        function createAbbreviation(fullHeader) {
+            // Remove the prefix (A1., B1.1, etc.)
+            const parts = fullHeader.split('. ');
+            if (parts.length < 2) return fullHeader;
+            
+            const prefix = parts[0] + '. ';
+            const description = parts.slice(1).join('. ');
+            
+            // Get first letter of each word in the description
+            const words = description.split(' ');
+            const abbreviation = words.map(word => {
+                // Take first letter, skip parentheses and special chars
+                return word.charAt(0).toUpperCase();
+            }).join('');
+            
+            return prefix + abbreviation;
+        }
+
+        // Mapping of full headers to their abbreviations (A1 to D6 only)
+        const headerAbbreviations = {
+            // Section A: STATISTIK
+            'A1. Jumlah Bilangan Pekerja': 'A1. JBP',
+            'A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan': 'A2. JCSPDK',
+            
+            // Section B: REKOD KES KEMALANGAN
+            'B1.1 Kes Kematian': 'B1.1 KK',
+            'B1.2 Kes Kemalangan Parah': 'B1.2 KKP',
+            'B2.1 Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)': 'B2.1 KRP',
+            'B2.2 Kes Pertolongan Cemas': 'B2.2 KPC',
+            'B3.1 Kebakaran': 'B3.1 KB',
+            'B3.2 Kerosakan Harta Benda': 'B3.2 KHB',
+            'B3.3 Kejadian Hampir (Near Miss)': 'B3.3 KHNM',
+            'B3.4 Lain-lain insiden': 'B3.4 LI',
+            
+            // Section C: REKOD KES BERKAITAN KESIHATAN
+            'C1. Kes Penyakit Pekerjaan': 'C1. KPP',
+            'C2. Kes Penyakit Berjangkit': 'C2. KPB',
+            
+            // Section D: PROGRAM KKP
+            'D1. Jumlah Mesyuarat KKP': 'D1. JMKKP',
+            'D2. Jumlah Latihan KKP': 'D2. JLKKP',
+            'D3. Jumlah Taklimat/Toolbox': 'D3. JTT',
+            'D4. Jumlah Pemeriksaan KKP': 'D4. JPKKP',
+            'D5. Pelaporan UAUC': 'D5. PUAUC',
+            'D6. Lain-lain Aktiviti KKP': 'D6. LAKKP'
+        };
+
+        // Function to get abbreviation for a header
+        function getAbbreviation(fullHeader) {
+            return headerAbbreviations[fullHeader] || fullHeader;
+        }
+
+        // Function to add legend section to CSV
+        function addLegendToCsv(csvRows) {
+            csvRows.push('');
+            csvRows.push('LEGENDA / KEY:');
+            
+            // Add abbreviations for each section
+            const sections = [
+                { title: 'SEKSYEN A: STATISTIK', items: [
+                    'A1. JBP = A1. Jumlah Bilangan Pekerja',
+                    'A2. JCSPDK = A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan'
+                ]},
+                { title: 'SEKSYEN B: REKOD KES KEMALANGAN', items: [
+                    'B1.1 KK = B1.1 Kes Kematian',
+                    'B1.2 KKP = B1.2 Kes Kemalangan Parah',
+                    'B2.1 KRP = B2.1 Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)',
+                    'B2.2 KPC = B2.2 Kes Pertolongan Cemas',
+                    'B3.1 KB = B3.1 Kebakaran',
+                    'B3.2 KHB = B3.2 Kerosakan Harta Benda',
+                    'B3.3 KHNM = B3.3 Kejadian Hampir (Near Miss)',
+                    'B3.4 LI = B3.4 Lain-lain insiden'
+                ]},
+                { title: 'SEKSYEN C: REKOD KES BERKAITAN KESIHATAN', items: [
+                    'C1. KPP = C1. Kes Penyakit Pekerjaan',
+                    'C2. KPB = C2. Kes Penyakit Berjangkit'
+                ]},
+                { title: 'SEKSYEN D: PROGRAM KKP', items: [
+                    'D1. JMKKP = D1. Jumlah Mesyuarat KKP',
+                    'D2. JLKKP = D2. Jumlah Latihan KKP',
+                    'D3. JTT = D3. Jumlah Taklimat/Toolbox',
+                    'D4. JPKKP = D4. Jumlah Pemeriksaan KKP',
+                    'D5. PUAUC = D5. Pelaporan UAUC',
+                    'D6. LAKKP = D6. Lain-lain Aktiviti KKP'
+                ]}
+            ];
+            
+            sections.forEach(section => {
+                csvRows.push('');
+                csvRows.push(section.title);
+                section.items.forEach(item => {
+                    csvRows.push(item);
+                });
+            });
+            
+            return csvRows;
+        }
+
         // Utility function for safe data access
         function safeGetValue(value, fallback = 'N/A') {
             return value || value === 0 ? value : fallback;
@@ -1702,7 +1805,7 @@
         }
 
         // =========================================================================
-        // ENHANCED CSV EXPORT FUNCTIONALITY - UPDATED TO MATCH FORM.HTML STRUCTURE
+        // ENHANCED CSV EXPORT FUNCTIONALITY WITH ABBREVIATIONS
         // =========================================================================
 
         // Enhanced export function with options
@@ -1816,7 +1919,7 @@
                 });
         }
 
-        // New function to export all data compressed by quarters - UPDATED FOR FORM.HTML STRUCTURE
+        // New function to export all data compressed by quarters - WITH ABBREVIATIONS
         function exportAllDataByQuarters(reports) {
             const csvRows = [];
             const timestamp = new Date();
@@ -1845,33 +1948,33 @@
                 }
             });
             
-            // Headers for quarter-compressed data - UPDATED TO MATCH FORM.HTML STRUCTURE
+            // Headers for quarter-compressed data - WITH ABBREVIATIONS
             const headers = [
                 'Suku',
                 'Jumlah Laporan',
-                // Section A: STATISTIK
-                'A1. Jumlah Bilangan Pekerja',
-                'A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan',
-                // Section B: REKOD KES KEMALANGAN - UPDATED STRUCTURE
-                'B1.1 Kes Kematian',
-                'B1.2 Kes Kemalangan Parah',
-                'B2.1 Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)',
-                'B2.2 Kes Pertolongan Cemas',
+                // Section A: STATISTIK - WITH ABBREVIATIONS
+                'A1. JBP',
+                'A2. JCSPDK',
+                // Section B: REKOD KES KEMALANGAN - WITH ABBREVIATIONS
+                'B1.1 KK',
+                'B1.2 KKP',
+                'B2.1 KRP',
+                'B2.2 KPC',
                 // B2.3 Penyakit Pekerjaan REMOVED (moved to Section C)
-                'B3.1 Kebakaran',
-                'B3.2 Kerosakan Harta Benda',
-                'B3.3 Kejadian Hampir (Near Miss)',
-                'B3.4 Lain-lain insiden',
-                // Section C: REKOD KES BERKAITAN KESIHATAN - UPDATED STRUCTURE
-                'C1. Kes Penyakit Pekerjaan',  // MOVED FROM SECTION B
-                'C2. Kes Penyakit Berjangkit',
-                // Section D: PROGRAM KKP
-                'D1. Jumlah Mesyuarat KKP',
-                'D2. Jumlah Latihan KKP',
-                'D3. Jumlah Taklimat/Toolbox',
-                'D4. Jumlah Pemeriksaan KKP',
-                'D5. Pelaporan UAUC',
-                'D6. Lain-lain Aktiviti KKP',
+                'B3.1 KB',
+                'B3.2 KHB',
+                'B3.3 KHNM',
+                'B3.4 LI',
+                // Section C: REKOD KES BERKAITAN KESIHATAN - WITH ABBREVIATIONS
+                'C1. KPP',  // MOVED FROM SECTION B
+                'C2. KPB',
+                // Section D: PROGRAM KKP - WITH ABBREVIATIONS
+                'D1. JMKKP',
+                'D2. JLKKP',
+                'D3. JTT',
+                'D4. JPKKP',
+                'D5. PUAUC',
+                'D6. LAKKP',
             ];
             
             csvRows.push(headers.join(','));
@@ -1883,10 +1986,10 @@
                     const row = [
                         escapeCsvValue(quarter),
                         data.total,
-                        // Section A
+                        // Section A - WITH ABBREVIATIONS
                         quarterTotals.totalWorkers,
                         quarterTotals.sickLeave,
-                        // Section B - UPDATED STRUCTURE
+                        // Section B - WITH ABBREVIATIONS
                         quarterTotals.deathCases,
                         quarterTotals.severeAccidents,
                         quarterTotals.medicalCases,
@@ -1896,10 +1999,10 @@
                         quarterTotals.propertyDamage,
                         quarterTotals.nearMiss,
                         quarterTotals.otherIncidents,
-                        // Section C - UPDATED STRUCTURE
+                        // Section C - WITH ABBREVIATIONS
                         quarterTotals.occupationalDisease,  // MOVED FROM SECTION B
                         quarterTotals.infectiousDisease,
-                        // Section D
+                        // Section D - WITH ABBREVIATIONS
                         quarterTotals.meetings,
                         quarterTotals.trainings,
                         quarterTotals.briefings,
@@ -1914,6 +2017,9 @@
             
             // Add enhanced summary statistics for all quarters combined
             addEnhancedSummaryForAllQuarters(csvRows, reports);
+            
+            // Add LEGEND after the data table
+            addLegendToCsv(csvRows);
             
             const filename = `Laporan_KKP_SemuaData_MengikutSuku_${new Date().toISOString().split('T')[0]}`;
             createAndDownloadCsv(csvRows, filename);
@@ -2015,13 +2121,13 @@
             return totals;
         }
 
-        // Enhanced summary for all quarters combined - UPDATED
+        // Enhanced summary for all quarters combined - WITH ABBREVIATIONS
         function addEnhancedSummaryForAllQuarters(csvRows, reports) {
             if (reports.length === 0) return;
             
-            csvRows.push(',,,,');
-            csvRows.push(',,,,STATISTIK TERPERINCI - SEMUA SUKU (STRUKTUR TERKINI)');
-            csvRows.push(',,,,');
+            csvRows.push('');
+            csvRows.push('STATISTIK TERPERINCI - SEMUA SUKU (STRUKTUR TERKINI):');
+            csvRows.push('');
             
             const summaries = {
                 'Jumlah Laporan': reports.length,
@@ -2049,8 +2155,8 @@
             });
             
             // Add quarter distribution
-            csvRows.push(',,,,');
-            csvRows.push(',,,,TABURAN MENGIKUT SUKU');
+            csvRows.push('');
+            csvRows.push('TABURAN MENGIKUT SUKU:');
             
             const quarterDistribution = {
                 'Suku 1': 0,
@@ -2092,12 +2198,13 @@ Butiran Eksport:
 - Format: ${options.format}
 - Struktur: Mengikut form.html terkini (Penyakit Pekerjaan di Seksyen C)
 - Kematian: Dimasukkan dalam Kes Kemalangan Major
+- Header: Menggunakan singkatan A1-D6 dengan LEGENDA
 
 Fail CSV akan dimuat turun secara automatik.
             `);
         }
 
-        // 1. Detailed Report Export (Enhanced) - UPDATED TO MATCH FORM.HTML STRUCTURE
+        // 1. Detailed Report Export (Enhanced) - WITH ABBREVIATIONS
         function exportDetailedReport(reports, options = {}) {
             const csvRows = [];
             const timestamp = new Date();
@@ -2116,36 +2223,36 @@ Fail CSV akan dimuat turun secara automatik.
             }
             csvRows.push(',,,,');
             
-            // Enhanced headers with UPDATED FORM STRUCTURE
+            // Enhanced headers WITH ABBREVIATIONS (A1 to D6 only)
             const headers = [
                 'No',
                 'Bahagian/Unit',
                 'Suku', 
                 'Tarikh Laporan',
                 'Pegawai Mengaku',
-                // Section A: STATISTIK - EXACT FORM FIELDS
-                'A1. Jumlah Bilangan Pekerja',
-                'A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan',
-                // Section B: REKOD KES KEMALANGAN - UPDATED STRUCTURE
-                'B1.1 Kes Kematian',
-                'B1.2 Kes Kemalangan Parah',
-                'B2.1 Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)',
-                'B2.2 Kes Pertolongan Cemas',
+                // Section A: STATISTIK - WITH ABBREVIATIONS
+                'A1. JBP',
+                'A2. JCSPDK',
+                // Section B: REKOD KES KEMALANGAN - WITH ABBREVIATIONS
+                'B1.1 KK',
+                'B1.2 KKP',
+                'B2.1 KRP',
+                'B2.2 KPC',
                 // B2.3 Penyakit Pekerjaan REMOVED (moved to Section C)
-                'B3.1 Kebakaran',
-                'B3.2 Kerosakan Harta Benda',
-                'B3.3 Kejadian Hampir (Near Miss)',
-                'B3.4 Lain-lain insiden',
-                // Section C: REKOD KES BERKAITAN KESIHATAN - UPDATED STRUCTURE
-                'C1. Kes Penyakit Pekerjaan',  // MOVED FROM SECTION B
-                'C2. Kes Penyakit Berjangkit',
-                // Section D: PROGRAM KKP
-                'D1. Jumlah Mesyuarat KKP',
-                'D2. Jumlah Latihan KKP',
-                'D3. Jumlah Taklimat/Toolbox',
-                'D4. Jumlah Pemeriksaan KKP',
-                'D5. Pelaporan UAUC',
-                'D6. Lain-lain Aktiviti KKP'
+                'B3.1 KB',
+                'B3.2 KHB',
+                'B3.3 KHNM',
+                'B3.4 LI',
+                // Section C: REKOD KES BERKAITAN KESIHATAN - WITH ABBREVIATIONS
+                'C1. KPP',  // MOVED FROM SECTION B
+                'C2. KPB',
+                // Section D: PROGRAM KKP - WITH ABBREVIATIONS
+                'D1. JMKKP',
+                'D2. JLKKP',
+                'D3. JTT',
+                'D4. JPKKP',
+                'D5. PUAUC',
+                'D6. LAKKP'
             ];
             
             csvRows.push(headers.join(','));
@@ -2167,10 +2274,10 @@ Fail CSV akan dimuat turun secara automatik.
                     escapeCsvValue(report.quarter),
                     escapeCsvValue(formatDateForExport(report.reportDate)),
                     escapeCsvValue(report.certifierName),
-                    // Section A: EXACT FORM FIELDS
+                    // Section A: WITH ABBREVIATIONS
                     safeGetValue(report.totalWorkers, '0'),
                     safeGetValue(report.sickLeave, '0'),
-                    // Section B: UPDATED STRUCTURE
+                    // Section B: WITH ABBREVIATIONS
                     safeGetValue(report.deathCases, '0'),
                     safeGetValue(report.severeAccidents, '0'),
                     safeGetValue(report.medicalCases, '0'),
@@ -2180,10 +2287,10 @@ Fail CSV akan dimuat turun secara automatik.
                     safeGetValue(report.propertyDamage, '0'),
                     safeGetValue(report.nearMiss, '0'),
                     safeGetValue(report.otherIncidents, '0'),
-                    // Section C: UPDATED STRUCTURE
+                    // Section C: WITH ABBREVIATIONS
                     safeGetValue(report.occupationalDisease, '0'),  // MOVED FROM SECTION B
                     safeGetValue(report.infectiousDisease, '0'),
-                    // Section D
+                    // Section D: WITH ABBREVIATIONS
                     safeGetValue(report.meetings, '0'),
                     safeGetValue(report.trainings, '0'),
                     safeGetValue(report.briefings, '0'),
@@ -2195,14 +2302,17 @@ Fail CSV akan dimuat turun secara automatik.
                 csvRows.push(row.join(','));
             });
             
-            // Add enhanced summary statistics - UPDATED
+            // Add enhanced summary statistics - WITH ABBREVIATIONS
             addEnhancedSummary(csvRows, reports);
+            
+            // Add LEGEND after the data table
+            addLegendToCsv(csvRows);
             
             const filename = generateExportFilename('Laporan_KKP_Data_Terperinci_Borang_Terkini', filters, options);
             createAndDownloadCsv(csvRows, filename);
         }
 
-        // 2. Summary Report Export - UPDATED
+        // 2. Summary Report Export - WITH ABBREVIATIONS
         function exportSummaryReport(options = {}) {
             const reports = options.dataSource === 'all' ? allReports : currentReports;
             const csvRows = [];
@@ -2220,7 +2330,7 @@ Fail CSV akan dimuat turun secara automatik.
             }
             csvRows.push(',,,,');
             
-            // Summary headers - UPDATED
+            // Summary headers - WITH ABBREVIATIONS
             const headers = [
                 'Bahagian/Unit',
                 'Suku',
@@ -2254,11 +2364,14 @@ Fail CSV akan dimuat turun secara automatik.
             const quarterlySummary = generateQuarterlySummary(reports);
             addQuarterlySummaryToCsv(csvRows, quarterlySummary);
             
+            // Add LEGEND after the data table
+            addLegendToCsv(csvRows);
+            
             const filename = generateExportFilename('Ringkasan_KKP_Terkini', filters, options);
             createAndDownloadCsv(csvRows, filename);
         }
 
-        // 3. Quarterly Summary Export - UPDATED
+        // 3. Quarterly Summary Export - WITH ABBREVIATIONS
         function exportQuarterlySummary(options = {}) {
             const reports = options.dataSource === 'all' ? allReports : currentReports;
             const csvRows = [];
@@ -2278,7 +2391,7 @@ Fail CSV akan dimuat turun secara automatik.
             
             const quarterlyData = generateQuarterlySummary(reports);
             
-            // Quarterly headers - UPDATED
+            // Quarterly headers - WITH ABBREVIATIONS
             const headers = [
                 'Suku',
                 'Bilangan Laporan',
@@ -2307,6 +2420,9 @@ Fail CSV akan dimuat turun secara automatik.
             
             // Add overall totals
             addQuarterlyTotalSummary(csvRows, quarterlyData);
+            
+            // Add LEGEND after the data table
+            addLegendToCsv(csvRows);
             
             const filename = generateExportFilename('Laporan_Kuarta_KKP_Terkini', filters, options);
             createAndDownloadCsv(csvRows, filename);
@@ -2338,13 +2454,13 @@ Fail CSV akan dimuat turun secara automatik.
                    report.certifierName;
         }
 
-        // Enhanced summary statistics - UPDATED VERSION
+        // Enhanced summary statistics - WITH ABBREVIATIONS
         function addEnhancedSummary(csvRows, reports) {
             if (reports.length === 0) return;
             
-            csvRows.push(',,,,');
-            csvRows.push(',,,,STATISTIK TERPERINCI (STRUKTUR TERKINI)');
-            csvRows.push(',,,,');
+            csvRows.push('');
+            csvRows.push('STATISTIK TERPERINCI (STRUKTUR TERKINI):');
+            csvRows.push('');
             
             const summaries = {
                 'Jumlah Laporan': reports.length,
@@ -2399,8 +2515,8 @@ Fail CSV akan dimuat turun secara automatik.
         }
 
         function addQuarterlySummaryToCsv(csvRows, quarterlyData) {
-            csvRows.push(',,,,');
-            csvRows.push(',,,,RINGKASAN KUARTA (STRUKTUR TERKINI)');
+            csvRows.push('');
+            csvRows.push('RINGKASAN KUARTA (STRUKTUR TERKINI):');
             
             Object.entries(quarterlyData).forEach(([quarter, data]) => {
                 const total = data.majorAccidents + data.minorAccidents + data.noInjuryAccidents;
@@ -2409,8 +2525,8 @@ Fail CSV akan dimuat turun secara automatik.
         }
 
         function addQuarterlyTotalSummary(csvRows, quarterlyData) {
-            csvRows.push(',,,,');
-            csvRows.push(',,,,JUMLAH KESELURUHAN (STRUKTUR TERKINI)');
+            csvRows.push('');
+            csvRows.push('JUMLAH KESELURUHAN (STRUKTUR TERKINI):');
             
             const totals = {
                 reports: 0,
