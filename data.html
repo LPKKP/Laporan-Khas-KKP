@@ -872,7 +872,7 @@
                     <th class="sortable" data-sort="index">No. <span class="sort-indicator">↕</span></th>
                     <th class="sortable" data-sort="division">Bahagian/Unit <span class="sort-indicator">↕</span></th>
                     <th class="sortable" data-sort="quarter">Suku <span class="sort-indicator">↕</span></th>
-                    <th class="sortable" data-sort="deathCases">Kematian <span class="sort-indicator">↕</span></th>
+                    <!-- Kematian column removed -->
                     <!-- NEW COLUMNS -->
                     <th class="sortable" data-sort="majorAccidents">Kes Kemalangan Major <span class="sort-indicator">↕</span></th>
                     <th class="sortable" data-sort="minorAccidents">Kes Kemalangan Minor <span class="sort-indicator">↕</span></th>
@@ -885,7 +885,7 @@
             </thead>
             <tbody id="tableBody">
                 <tr>
-                    <td colspan="10" class="loading">Loading reports...</td>
+                    <td colspan="9" class="loading">Loading reports...</td>
                 </tr>
             </tbody>
         </table>
@@ -1017,7 +1017,7 @@
 
         // Load all reports at once for client-side filtering
         function loadAllReports() {
-            tableBody.innerHTML = '<tr><td colspan="10" class="loading">Loading reports...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="9" class="loading">Loading reports...</td></tr>';
             
             db.collection('kkpReports')
                 .orderBy('createdAt', 'desc')
@@ -1037,7 +1037,7 @@
                     
                 }).catch((error) => {
                     console.error('Error loading reports: ', error);
-                    tableBody.innerHTML = '<tr><td colspan="10" class="error-message">Error loading reports. Please try again.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="9" class="error-message">Error loading reports. Please try again.</td></tr>';
                 });
         }
 
@@ -1519,7 +1519,7 @@
             });
         }
 
-        // NEW CALCULATION FUNCTIONS FOR UPDATED COLUMNS
+        // UPDATED CALCULATION FUNCTIONS TO MATCH FORM.HTML STRUCTURE
 
         // Calculate Major Accidents (Kematian + Kemalangan Parah)
         function calculateMajorAccidents(report) {
@@ -1529,26 +1529,28 @@
             );
         }
 
-        // Calculate Minor Accidents (Kes Rawatan Perubatan + First Aid + Penyakit Pekerjaan)
+        // UPDATED: Calculate Minor Accidents (Kes Rawatan Perubatan + First Aid ONLY)
+        // Penyakit Pekerjaan has been moved to Seksyen C in form.html
         function calculateMinorAccidents(report) {
             return (
                 parseInt(safeGetValue(report.medicalCases, 0)) +
-                parseInt(safeGetValue(report.firstAidCases, 0)) +
-                parseInt(safeGetValue(report.occupationalDisease, 0))
+                parseInt(safeGetValue(report.firstAidCases, 0))
+                // REMOVED: Penyakit Pekerjaan (moved to Seksyen C)
             );
         }
 
-        // Calculate No Injury Accidents (Kebakaran + Kerosakan Harta + Kemalangan Perjalanan + Near Miss)
+        // Calculate No Injury Accidents (Kebakaran + Kerosakan Harta + Near Miss + Lain-lain)
+        // Note: commutingAccidents has been removed from form.html
         function calculateNoInjuryAccidents(report) {
             return (
                 parseInt(safeGetValue(report.fireCases, 0)) +
                 parseInt(safeGetValue(report.propertyDamage, 0)) +
-                parseInt(safeGetValue(report.commutingAccidents, 0)) +
-                parseInt(safeGetValue(report.nearMiss, 0))
+                parseInt(safeGetValue(report.nearMiss, 0)) +
+                parseInt(safeGetValue(report.otherIncidents, 0))
             );
         }
 
-        // Get accident details for display - UPDATED FOR NEW COLUMNS
+        // Get accident details for display - UPDATED FOR FORM.HTML STRUCTURE
         function getMajorAccidentDetails(report) {
             const details = [];
             if (report.deathCases && parseInt(report.deathCases) > 0) details.push(`Kematian: ${report.deathCases}`);
@@ -1556,27 +1558,30 @@
             return details.length > 0 ? details.join(', ') : 'Tiada kes major';
         }
 
+        // UPDATED: Get Minor Accident Details (without Penyakit Pekerjaan)
         function getMinorAccidentDetails(report) {
             const details = [];
             if (report.medicalCases && parseInt(report.medicalCases) > 0) details.push(`Perubatan: ${report.medicalCases}`);
             if (report.firstAidCases && parseInt(report.firstAidCases) > 0) details.push(`First Aid: ${report.firstAidCases}`);
-            if (report.occupationalDisease && parseInt(report.occupationalDisease) > 0) details.push(`Penyakit: ${report.occupationalDisease}`);
+            // REMOVED: Penyakit Pekerjaan (moved to Seksyen C)
             return details.length > 0 ? details.join(', ') : 'Tiada kes minor';
         }
 
+        // UPDATED: Get No Injury Accident Details (without commutingAccidents)
         function getNoInjuryAccidentDetails(report) {
             const details = [];
             if (report.fireCases && parseInt(report.fireCases) > 0) details.push(`Kebakaran: ${report.fireCases}`);
             if (report.propertyDamage && parseInt(report.propertyDamage) > 0) details.push(`Kerosakan: ${report.propertyDamage}`);
-            if (report.commutingAccidents && parseInt(report.commutingAccidents) > 0) details.push(`Perjalanan: ${report.commutingAccidents}`);
+            // REMOVED: commutingAccidents (removed from form.html)
             if (report.nearMiss && parseInt(report.nearMiss) > 0) details.push(`Near Miss: ${report.nearMiss}`);
+            if (report.otherIncidents && parseInt(report.otherIncidents) > 0) details.push(`Lain-lain: ${report.otherIncidents}`);
             return details.length > 0 ? details.join(', ') : 'Tiada kes tiada kecederaan';
         }
 
-        // Display reports in the table - UPDATED FOR NEW COLUMNS
+        // Display reports in the table - UPDATED (KEMATIAN COLUMN REMOVED)
         function displayReports() {
             if (!filteredReports.length) {
-                tableBody.innerHTML = '<tr><td colspan="10">No reports found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="9">No reports found.</td></tr>';
                 updatePagination();
                 return;
             }
@@ -1605,8 +1610,8 @@
                     <td>${globalIndex}</td>
                     <td>${safeGetValue(report.division)}</td>
                     <td>${safeGetValue(report.quarter)}</td>
-                    <td>${safeGetValue(report.deathCases, '0')}</td>
-                    <!-- NEW COLUMNS WITH NESTED INFORMATION -->
+                    <!-- Kematian column removed -->
+                    <!-- UPDATED COLUMNS WITH NESTED INFORMATION -->
                     <td>
                         ${majorAccidents}
                         <div class="accident-details">${majorDetails}</div>
@@ -1619,7 +1624,7 @@
                         ${noInjuryAccidents}
                         <div class="accident-details">${noInjuryDetails}</div>
                     </td>
-                    <!-- END NEW COLUMNS -->
+                    <!-- END UPDATED COLUMNS -->
                     <td>${safeGetValue(report.certifierName)}</td>
                     <td>${reportDate}</td>
                     <td>
@@ -1697,7 +1702,7 @@
         }
 
         // =========================================================================
-        // ENHANCED CSV EXPORT FUNCTIONALITY - UPDATED TO MATCH FORM PAGE STRUCTURE
+        // ENHANCED CSV EXPORT FUNCTIONALITY - UPDATED TO MATCH FORM.HTML STRUCTURE
         // =========================================================================
 
         // Enhanced export function with options
@@ -1811,13 +1816,13 @@
                 });
         }
 
-        // New function to export all data compressed by quarters
+        // New function to export all data compressed by quarters - UPDATED FOR FORM.HTML STRUCTURE
         function exportAllDataByQuarters(reports) {
             const csvRows = [];
             const timestamp = new Date();
             
             // Title and headers with enhanced information
-            csvRows.push(',,,,LAPORAN KKP - SEMUA DATA MENGIKUT SUKU');
+            csvRows.push(',,,,LAPORAN KKP - SEMUA DATA MENGIKUT SUKU (STRUKTUR BORANG TERKINI)');
             csvRows.push(',,,,');
             csvRows.push(`",,,,Dijana pada: ${timestamp.toLocaleString('ms-MY')}"`);
             csvRows.push(`",,,,Jumlah Rekod Asal: ${reports.length}"`);
@@ -1840,25 +1845,26 @@
                 }
             });
             
-            // Headers for quarter-compressed data - UPDATED TO MATCH FORM STRUCTURE
+            // Headers for quarter-compressed data - UPDATED TO MATCH FORM.HTML STRUCTURE
             const headers = [
                 'Suku',
                 'Jumlah Laporan',
                 // Section A: STATISTIK
                 'A1. Jumlah Bilangan Pekerja',
                 'A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan',
-                // Section B: REKOD KES KEMALANGAN - EXACT FORM FIELDS
+                // Section B: REKOD KES KEMALANGAN - UPDATED STRUCTURE
                 'B1.1 Kes Kematian',
                 'B1.2 Kes Kemalangan Parah',
                 'B2.1 Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)',
                 'B2.2 Kes Pertolongan Cemas',
-                'B2.3 Penyakit Pekerjaan',
+                // B2.3 Penyakit Pekerjaan REMOVED (moved to Section C)
                 'B3.1 Kebakaran',
                 'B3.2 Kerosakan Harta Benda',
                 'B3.3 Kejadian Hampir (Near Miss)',
                 'B3.4 Lain-lain insiden',
-                // Section C: REKOD KES BERKAITAN KESIHATAN
-                'C1. Kes Penyakit Berjangkit',
+                // Section C: REKOD KES BERKAITAN KESIHATAN - UPDATED STRUCTURE
+                'C1. Kes Penyakit Pekerjaan',  // MOVED FROM SECTION B
+                'C2. Kes Penyakit Berjangkit',
                 // Section D: PROGRAM KKP
                 'D1. Jumlah Mesyuarat KKP',
                 'D2. Jumlah Latihan KKP',
@@ -1880,23 +1886,23 @@
                         // Section A
                         quarterTotals.totalWorkers,
                         quarterTotals.sickLeave,
-                        // Section B - EXACT FORM FIELDS
+                        // Section B - UPDATED STRUCTURE
                         quarterTotals.deathCases,
                         quarterTotals.severeAccidents,
                         quarterTotals.medicalCases,
                         quarterTotals.firstAidCases,
-                        quarterTotals.occupationalDisease,
+                        // Penyakit Pekerjaan removed from here
                         quarterTotals.fireCases,
                         quarterTotals.propertyDamage,
                         quarterTotals.nearMiss,
                         quarterTotals.otherIncidents,
-                        // Section C
+                        // Section C - UPDATED STRUCTURE
+                        quarterTotals.occupationalDisease,  // MOVED FROM SECTION B
                         quarterTotals.infectiousDisease,
                         // Section D
                         quarterTotals.meetings,
                         quarterTotals.trainings,
                         quarterTotals.briefings,
-                        quarterTotals.briefingsYTD,
                         quarterTotals.inspections,
                         quarterTotals.uauc,
                         quarterTotals.otherActivities
@@ -1913,7 +1919,7 @@
             createAndDownloadCsv(csvRows, filename);
         }
 
-        // Calculate totals for a set of reports in a quarter - UPDATED TO MATCH FORM STRUCTURE
+        // Calculate totals for a set of reports in a quarter - UPDATED TO MATCH FORM.HTML STRUCTURE
         function calculateQuarterTotals(reports) {
             const totals = {
                 // Section A
@@ -1921,7 +1927,7 @@
                 totalWorkersYTD: 0,
                 sickLeave: 0,
                 sickLeaveYTD: 0,
-                // Section B - EXACT FORM FIELDS
+                // Section B - UPDATED STRUCTURE
                 deathCases: 0,
                 deathCasesYTD: 0,
                 severeAccidents: 0,
@@ -1930,8 +1936,7 @@
                 medicalCasesYTD: 0,
                 firstAidCases: 0,
                 firstAidCasesYTD: 0,
-                occupationalDisease: 0,
-                occupationalDiseaseYTD: 0,
+                // occupationalDisease moved to Section C
                 fireCases: 0,
                 fireCasesYTD: 0,
                 propertyDamage: 0,
@@ -1940,7 +1945,9 @@
                 nearMissYTD: 0,
                 otherIncidents: 0,
                 otherIncidentsYTD: 0,
-                // Section C
+                // Section C - UPDATED STRUCTURE
+                occupationalDisease: 0,  // MOVED FROM SECTION B
+                occupationalDiseaseYTD: 0,
                 infectiousDisease: 0,
                 infectiousDiseaseYTD: 0,
                 // Section D
@@ -1965,7 +1972,7 @@
                 totals.sickLeave += parseInt(safeGetValue(report.sickLeave, '0'));
                 totals.sickLeaveYTD += parseInt(safeGetValue(report.sickLeaveYTD, '0'));
                 
-                // Section B - EXACT FORM FIELDS
+                // Section B - UPDATED STRUCTURE
                 totals.deathCases += parseInt(safeGetValue(report.deathCases, '0'));
                 totals.deathCasesYTD += parseInt(safeGetValue(report.deathCasesYTD, '0'));
                 totals.severeAccidents += parseInt(safeGetValue(report.severeAccidents, '0'));
@@ -1974,8 +1981,7 @@
                 totals.medicalCasesYTD += parseInt(safeGetValue(report.medicalCasesYTD, '0'));
                 totals.firstAidCases += parseInt(safeGetValue(report.firstAidCases, '0'));
                 totals.firstAidCasesYTD += parseInt(safeGetValue(report.firstAidCasesYTD, '0'));
-                totals.occupationalDisease += parseInt(safeGetValue(report.occupationalDisease, '0'));
-                totals.occupationalDiseaseYTD += parseInt(safeGetValue(report.occupationalDiseaseYTD, '0'));
+                // occupationalDisease moved to Section C
                 totals.fireCases += parseInt(safeGetValue(report.fireCases, '0'));
                 totals.fireCasesYTD += parseInt(safeGetValue(report.fireCasesYTD, '0'));
                 totals.propertyDamage += parseInt(safeGetValue(report.propertyDamage, '0'));
@@ -1985,7 +1991,9 @@
                 totals.otherIncidents += parseInt(safeGetValue(report.otherIncidents, '0'));
                 totals.otherIncidentsYTD += parseInt(safeGetValue(report.otherIncidentsYTD, '0'));
                 
-                // Section C
+                // Section C - UPDATED STRUCTURE
+                totals.occupationalDisease += parseInt(safeGetValue(report.occupationalDisease, '0'));
+                totals.occupationalDiseaseYTD += parseInt(safeGetValue(report.occupationalDiseaseYTD, '0'));
                 totals.infectiousDisease += parseInt(safeGetValue(report.infectiousDisease, '0'));
                 totals.infectiousDiseaseYTD += parseInt(safeGetValue(report.infectiousDiseaseYTD, '0'));
                 
@@ -2012,7 +2020,7 @@
             if (reports.length === 0) return;
             
             csvRows.push(',,,,');
-            csvRows.push(',,,,STATISTIK TERPERINCI - SEMUA SUKU');
+            csvRows.push(',,,,STATISTIK TERPERINCI - SEMUA SUKU (STRUKTUR TERKINI)');
             csvRows.push(',,,,');
             
             const summaries = {
@@ -2022,7 +2030,7 @@
                 'Jumlah Kes Kemalangan Parah': sumField(reports, 'severeAccidents'),
                 'Jumlah Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)': sumField(reports, 'medicalCases'),
                 'Jumlah Kes Pertolongan Cemas': sumField(reports, 'firstAidCases'),
-                'Jumlah Penyakit Pekerjaan': sumField(reports, 'occupationalDisease'),
+                'Jumlah Penyakit Pekerjaan (Seksyen C)': sumField(reports, 'occupationalDisease'),  // MOVED TO SECTION C
                 'Jumlah Kebakaran': sumField(reports, 'fireCases'),
                 'Jumlah Kerosakan Harta Benda': sumField(reports, 'propertyDamage'),
                 'Jumlah Kejadian Hampir (Near Miss)': sumField(reports, 'nearMiss'),
@@ -2082,19 +2090,21 @@ Butiran Eksport:
 - Sumber Data: ${dataSourceText}
 - Jumlah Rekod: ${totalRecords}
 - Format: ${options.format}
+- Struktur: Mengikut form.html terkini (Penyakit Pekerjaan di Seksyen C)
+- Kematian: Dimasukkan dalam Kes Kemalangan Major
 
 Fail CSV akan dimuat turun secara automatik.
             `);
         }
 
-        // 1. Detailed Report Export (Enhanced) - UPDATED TO MATCH FORM PAGE STRUCTURE
+        // 1. Detailed Report Export (Enhanced) - UPDATED TO MATCH FORM.HTML STRUCTURE
         function exportDetailedReport(reports, options = {}) {
             const csvRows = [];
             const timestamp = new Date();
             const filters = getCurrentFilters();
             
             // Title and headers with enhanced information
-            csvRows.push(',,,,LAPORAN KKP - DATA TERPERINCI (STRUKTUR BORANG ASAL)');
+            csvRows.push(',,,,LAPORAN KKP - DATA TERPERINCI (STRUKTUR BORANG TERKINI)');
             csvRows.push(',,,,');
             csvRows.push(`",,,,Dijana pada: ${timestamp.toLocaleString('ms-MY')}"`);
             csvRows.push(`",,,,Jumlah Rekod: ${reports.length}"`);
@@ -2106,7 +2116,7 @@ Fail CSV akan dimuat turun secara automatik.
             }
             csvRows.push(',,,,');
             
-            // Enhanced headers with EXACT FORM STRUCTURE
+            // Enhanced headers with UPDATED FORM STRUCTURE
             const headers = [
                 'No',
                 'Bahagian/Unit',
@@ -2116,18 +2126,19 @@ Fail CSV akan dimuat turun secara automatik.
                 // Section A: STATISTIK - EXACT FORM FIELDS
                 'A1. Jumlah Bilangan Pekerja',
                 'A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan',
-                // Section B: REKOD KES KEMALANGAN - EXACT FORM FIELDS
+                // Section B: REKOD KES KEMALANGAN - UPDATED STRUCTURE
                 'B1.1 Kes Kematian',
                 'B1.2 Kes Kemalangan Parah',
                 'B2.1 Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)',
                 'B2.2 Kes Pertolongan Cemas',
-                'B2.3 Penyakit Pekerjaan',
+                // B2.3 Penyakit Pekerjaan REMOVED (moved to Section C)
                 'B3.1 Kebakaran',
                 'B3.2 Kerosakan Harta Benda',
                 'B3.3 Kejadian Hampir (Near Miss)',
                 'B3.4 Lain-lain insiden',
-                // Section C: REKOD KES BERKAITAN KESIHATAN
-                'C1. Kes Penyakit Berjangkit',
+                // Section C: REKOD KES BERKAITAN KESIHATAN - UPDATED STRUCTURE
+                'C1. Kes Penyakit Pekerjaan',  // MOVED FROM SECTION B
+                'C2. Kes Penyakit Berjangkit',
                 // Section D: PROGRAM KKP
                 'D1. Jumlah Mesyuarat KKP',
                 'D2. Jumlah Latihan KKP',
@@ -2159,17 +2170,18 @@ Fail CSV akan dimuat turun secara automatik.
                     // Section A: EXACT FORM FIELDS
                     safeGetValue(report.totalWorkers, '0'),
                     safeGetValue(report.sickLeave, '0'),
-                    // Section B: EXACT FORM FIELDS
+                    // Section B: UPDATED STRUCTURE
                     safeGetValue(report.deathCases, '0'),
                     safeGetValue(report.severeAccidents, '0'),
                     safeGetValue(report.medicalCases, '0'),
                     safeGetValue(report.firstAidCases, '0'),
-                    safeGetValue(report.occupationalDisease, '0'),
+                    // Penyakit Pekerjaan removed from here
                     safeGetValue(report.fireCases, '0'),
                     safeGetValue(report.propertyDamage, '0'),
                     safeGetValue(report.nearMiss, '0'),
                     safeGetValue(report.otherIncidents, '0'),
-                    // Section C
+                    // Section C: UPDATED STRUCTURE
+                    safeGetValue(report.occupationalDisease, '0'),  // MOVED FROM SECTION B
                     safeGetValue(report.infectiousDisease, '0'),
                     // Section D
                     safeGetValue(report.meetings, '0'),
@@ -2186,11 +2198,7 @@ Fail CSV akan dimuat turun secara automatik.
             // Add enhanced summary statistics - UPDATED
             addEnhancedSummary(csvRows, reports);
             
-            // Add data quality information
-            // csvRows.push(',,,,');
-            // csvRows.push(`"Rekod Valid","${validReportsCount}","Rekod Tidak Valid","${reports.length - validReportsCount}","Jumlah","${reports.length}"`);
-            
-            const filename = generateExportFilename('Laporan_KKP_Data_Terperinci_Borang', filters, options);
+            const filename = generateExportFilename('Laporan_KKP_Data_Terperinci_Borang_Terkini', filters, options);
             createAndDownloadCsv(csvRows, filename);
         }
 
@@ -2201,7 +2209,7 @@ Fail CSV akan dimuat turun secara automatik.
             const timestamp = new Date();
             const filters = getCurrentFilters();
             
-            csvRows.push(',,,,RINGKASAN LAPORAN KKP');
+            csvRows.push(',,,,RINGKASAN LAPORAN KKP (STRUKTUR TERKINI)');
             csvRows.push(',,,,');
             csvRows.push(`",,,,Dijana pada: ${timestamp.toLocaleString('ms-MY')}"`);
             csvRows.push(`",,,,Jumlah Rekod: ${reports.length}"`);
@@ -2217,9 +2225,8 @@ Fail CSV akan dimuat turun secara automatik.
                 'Bahagian/Unit',
                 'Suku',
                 'Tarikh Laporan',
-                'Kematian',
-                'Kes Kemalangan Major',
-                'Kes Kemalangan Minor',
+                'Kes Kemalangan Major (Kematian + Parah)',
+                'Kes Kemalangan Minor (Perubatan + First Aid)',  // UPDATED
                 'Kes Kemalangan Tiada Kecederaan',
                 'Pegawai Mengaku'
             ];
@@ -2234,9 +2241,8 @@ Fail CSV akan dimuat turun secara automatik.
                     escapeCsvValue(report.division),
                     escapeCsvValue(report.quarter),
                     escapeCsvValue(formatDateForExport(report.reportDate)),
-                    safeGetValue(report.deathCases, '0'),
-                    calculateMajorAccidents(report),
-                    calculateMinorAccidents(report),
+                    calculateMajorAccidents(report),  // Includes death cases
+                    calculateMinorAccidents(report),  // UPDATED CALCULATION
                     calculateNoInjuryAccidents(report),
                     escapeCsvValue(report.certifierName)
                 ];
@@ -2248,7 +2254,7 @@ Fail CSV akan dimuat turun secara automatik.
             const quarterlySummary = generateQuarterlySummary(reports);
             addQuarterlySummaryToCsv(csvRows, quarterlySummary);
             
-            const filename = generateExportFilename('Ringkasan_KKP', filters, options);
+            const filename = generateExportFilename('Ringkasan_KKP_Terkini', filters, options);
             createAndDownloadCsv(csvRows, filename);
         }
 
@@ -2259,7 +2265,7 @@ Fail CSV akan dimuat turun secara automatik.
             const timestamp = new Date();
             const filters = getCurrentFilters();
             
-            csvRows.push(',,,,LAPORAN KUARTA KKP');
+            csvRows.push(',,,,LAPORAN KUARTA KKP (STRUKTUR TERKINI)');
             csvRows.push(',,,,');
             csvRows.push(`",,,,Dijana pada: ${timestamp.toLocaleString('ms-MY')}"`);
             csvRows.push(`",,,,Jumlah Rekod: ${reports.length}"`);
@@ -2276,8 +2282,8 @@ Fail CSV akan dimuat turun secara automatik.
             const headers = [
                 'Suku',
                 'Bilangan Laporan',
-                'Kes Kemalangan Major',
-                'Kes Kemalangan Minor',
+                'Kes Kemalangan Major (Kematian + Parah)',
+                'Kes Kemalangan Minor (Perubatan + First Aid)',  // UPDATED
                 'Kes Kemalangan Tiada Kecederaan',
                 'Jumlah Keseluruhan'
             ];
@@ -2290,8 +2296,8 @@ Fail CSV akan dimuat turun secara automatik.
                 const row = [
                     escapeCsvValue(quarter),
                     data.reports,
-                    data.majorAccidents,
-                    data.minorAccidents,
+                    data.majorAccidents,  // Includes death cases
+                    data.minorAccidents,  // UPDATED CALCULATION
                     data.noInjuryAccidents,
                     total
                 ];
@@ -2302,7 +2308,7 @@ Fail CSV akan dimuat turun secara automatik.
             // Add overall totals
             addQuarterlyTotalSummary(csvRows, quarterlyData);
             
-            const filename = generateExportFilename('Laporan_Kuarta_KKP', filters, options);
+            const filename = generateExportFilename('Laporan_Kuarta_KKP_Terkini', filters, options);
             createAndDownloadCsv(csvRows, filename);
         }
 
@@ -2337,7 +2343,7 @@ Fail CSV akan dimuat turun secara automatik.
             if (reports.length === 0) return;
             
             csvRows.push(',,,,');
-            csvRows.push(',,,,STATISTIK TERPERINCI');
+            csvRows.push(',,,,STATISTIK TERPERINCI (STRUKTUR TERKINI)');
             csvRows.push(',,,,');
             
             const summaries = {
@@ -2347,7 +2353,7 @@ Fail CSV akan dimuat turun secara automatik.
                 'Jumlah Kes Kemalangan Parah': sumField(reports, 'severeAccidents'),
                 'Jumlah Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)': sumField(reports, 'medicalCases'),
                 'Jumlah Kes Rawatan Pertolongan Cemas': sumField(reports, 'firstAidCases'),
-                'Jumlah Penyakit Pekerjaan': sumField(reports, 'occupationalDisease'),
+                'Jumlah Penyakit Pekerjaan (Seksyen C)': sumField(reports, 'occupationalDisease'),  // MOVED TO SECTION C
                 'Jumlah Kebakaran': sumField(reports, 'fireCases'),
                 'Jumlah Kerosakan Harta Benda': sumField(reports, 'propertyDamage'),
                 'Jumlah Kejadian Hampir (Near Miss)': sumField(reports, 'nearMiss'),
@@ -2385,7 +2391,7 @@ Fail CSV akan dimuat turun secara automatik.
                 
                 quarterlyData[quarter].reports++;
                 quarterlyData[quarter].majorAccidents += calculateMajorAccidents(report);
-                quarterlyData[quarter].minorAccidents += calculateMinorAccidents(report);
+                quarterlyData[quarter].minorAccidents += calculateMinorAccidents(report);  // UPDATED
                 quarterlyData[quarter].noInjuryAccidents += calculateNoInjuryAccidents(report);
             });
             
@@ -2394,7 +2400,7 @@ Fail CSV akan dimuat turun secara automatik.
 
         function addQuarterlySummaryToCsv(csvRows, quarterlyData) {
             csvRows.push(',,,,');
-            csvRows.push(',,,,RINGKASAN KUARTA');
+            csvRows.push(',,,,RINGKASAN KUARTA (STRUKTUR TERKINI)');
             
             Object.entries(quarterlyData).forEach(([quarter, data]) => {
                 const total = data.majorAccidents + data.minorAccidents + data.noInjuryAccidents;
@@ -2404,7 +2410,7 @@ Fail CSV akan dimuat turun secara automatik.
 
         function addQuarterlyTotalSummary(csvRows, quarterlyData) {
             csvRows.push(',,,,');
-            csvRows.push(',,,,JUMLAH KESELURUHAN');
+            csvRows.push(',,,,JUMLAH KESELURUHAN (STRUKTUR TERKINI)');
             
             const totals = {
                 reports: 0,
