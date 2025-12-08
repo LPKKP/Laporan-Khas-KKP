@@ -477,11 +477,7 @@
                         <input type="number" id="firstAidCasesYTD" name="firstAidCasesYTD" min="0" value="0">
                     </div>
                     
-                    <div class="form-row">
-                        <label for="occupationalDisease">2.3 Penyakit Pekerjaan:</label>
-                        <input type="number" id="occupationalDisease" name="occupationalDisease" min="0" value="0">
-                        <input type="number" id="occupationalDiseaseYTD" name="occupationalDiseaseYTD" min="0" value="0">
-                    </div>
+                    <!-- REMOVED: Penyakit Pekerjaan from here (moved to Seksyen C) -->
                     
                     <!-- 3. No Injury Accident Cases -->
                     <div class="form-row">
@@ -499,8 +495,6 @@
                         <input type="number" id="propertyDamage" name="propertyDamage" min="0" value="0">
                         <input type="number" id="propertyDamageYTD" name="propertyDamageYTD" min="0" value="0">
                     </div>
-                    
-                    <!-- REMOVED: 3.3 Kemalangan dalam Perjalanan -->
                     
                     <div class="form-row">
                         <label for="nearMiss">3.3 Kejadian Hampir (Near Miss):</label>
@@ -524,8 +518,16 @@
                     <div class="grid-header">BILANGAN KES</div>
                     <div class="grid-header">BILANGAN KES TAHUN INI</div>
                     
+                    <!-- 1. Penyakit Pekerjaan (moved from Seksyen B) -->
                     <div class="form-row">
-                        <label for="infectiousDisease">1. Kes Penyakit Berjangkit:</label>
+                        <label for="occupationalDisease">1. Kes Penyakit Pekerjaan:</label>
+                        <input type="number" id="occupationalDisease" name="occupationalDisease" min="0" value="0">
+                        <input type="number" id="occupationalDiseaseYTD" name="occupationalDiseaseYTD" min="0" value="0">
+                    </div>
+                    
+                    <!-- 2. Penyakit Berjangkit -->
+                    <div class="form-row">
+                        <label for="infectiousDisease">2. Kes Penyakit Berjangkit:</label>
                         <input type="number" id="infectiousDisease" name="infectiousDisease" min="0" value="0">
                         <input type="number" id="infectiousDiseaseYTD" name="infectiousDiseaseYTD" min="0" value="0">
                     </div>
@@ -704,19 +706,20 @@
                 medicalCasesYTD: document.getElementById('medicalCasesYTD').value,
                 firstAidCases: document.getElementById('firstAidCases').value,
                 firstAidCasesYTD: document.getElementById('firstAidCasesYTD').value,
-                occupationalDisease: document.getElementById('occupationalDisease').value,
-                occupationalDiseaseYTD: document.getElementById('occupationalDiseaseYTD').value,
+                // REMOVED: occupationalDisease and occupationalDiseaseYTD from here
+                
                 fireCases: document.getElementById('fireCases').value,
                 fireCasesYTD: document.getElementById('fireCasesYTD').value,
                 propertyDamage: document.getElementById('propertyDamage').value,
                 propertyDamageYTD: document.getElementById('propertyDamageYTD').value,
-                // REMOVED: commutingAccidents and commutingAccidentsYTD
                 nearMiss: document.getElementById('nearMiss').value,
                 nearMissYTD: document.getElementById('nearMissYTD').value,
                 otherIncidents: document.getElementById('otherIncidents').value,
                 otherIncidentsYTD: document.getElementById('otherIncidentsYTD').value,
                 
-                // Section C: Health-related Cases
+                // Section C: Health-related Cases (now includes Penyakit Pekerjaan)
+                occupationalDisease: document.getElementById('occupationalDisease').value,
+                occupationalDiseaseYTD: document.getElementById('occupationalDiseaseYTD').value,
                 infectiousDisease: document.getElementById('infectiousDisease').value,
                 infectiousDiseaseYTD: document.getElementById('infectiousDiseaseYTD').value,
                 
@@ -918,13 +921,13 @@
             return doc.lastAutoTable.finalY + 8;
         }
 
-        // Function to add Section B with uniform table styling
+        // Function to add Section B with uniform table styling (Penyakit Pekerjaan removed)
         function addSectionB(doc, data, yPosition) {
             doc.setFontSize(11.5);
             doc.text("SEKSYEN B : REKOD KES KEMALANGAN", 15, yPosition);
             yPosition += 6;
             
-            // Create table for Section B with updated structure
+            // Create table for Section B with updated structure (Penyakit Pekerjaan removed)
             const sectionB = [
                 ["1. Kes Kemalangan Major (Cuti Sakit >= 5 Hari)", "", ""],
                 ["1.1 Kes Kematian", data.deathCases, data.deathCasesYTD],
@@ -932,7 +935,6 @@
                 ["2. Kes Kemalangan Minor (Cuti Sakit < 5 Hari)", "", ""],
                 ["2.1 Kes Rawatan Perubatan", data.medicalCases, data.medicalCasesYTD],
                 ["2.2 Kes Rawatan Kecil (First Aid)", data.firstAidCases, data.firstAidCasesYTD],
-                ["2.3 Penyakit Pekerjaan", data.occupationalDisease, data.occupationalDiseaseYTD],
                 ["3. Kes Kemalangan Tiada Kecederaan", "", ""],
                 ["3.1 Kebakaran", data.fireCases, data.fireCasesYTD],
                 ["3.2 Kerosakan Harta Benda", data.propertyDamage, data.propertyDamageYTD],
@@ -967,7 +969,7 @@
                 margin: { left: 15, right: 15 },
                 didParseCell: function(data) {
                     // Style for section headers
-                    if (data.cell.raw === "" && data.row.index % 4 === 0) {
+                    if (data.cell.raw === "" && (data.row.index === 0 || data.row.index === 3 || data.row.index === 6)) {
                         data.cell.styles.fillColor = [240, 240, 240];
                         data.cell.styles.fontStyle = 'bold';
                         data.cell.styles.halign = 'left';
@@ -978,15 +980,16 @@
             return doc.lastAutoTable.finalY + 8;
         }
 
-        // Function to add Section C with uniform table styling
+        // Function to add Section C with uniform table styling (now includes Penyakit Pekerjaan)
         function addSectionC(doc, data, yPosition) {
             doc.setFontSize(11.5);
             doc.text("SEKSYEN C : REKOD KES BERKAITAN KESIHATAN", 15, yPosition);
             yPosition += 6;
             
-            // Create table for Section C
+            // Create table for Section C (now with both items)
             const sectionC = [
-                ["1. Kes Penyakit Berjangkit", data.infectiousDisease, data.infectiousDiseaseYTD]
+                ["1. Kes Penyakit Pekerjaan", data.occupationalDisease, data.occupationalDiseaseYTD],
+                ["2. Kes Penyakit Berjangkit", data.infectiousDisease, data.infectiousDiseaseYTD]
             ];
             
             doc.autoTable({
@@ -1136,4 +1139,3 @@
     </script>
 </body>
 </html>
-
