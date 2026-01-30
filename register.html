@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LPKKP - Daftar Akaun</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: visible;
+        }
+
+        .header {
+            background: #4a6cf7;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .form-container {
+            padding: 30px;
+            overflow: visible;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: #4a6cf7;
+            outline: none;
+        }
+
+        .btn {
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #3a5cd8;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            color: #d9534f;
+            font-weight: 500;
+            min-height: 24px;
+        }
+
+        .success-message {
+            color: #28a745;
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .info a {
+            color: #4a6cf7;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .info a:hover {
+            text-decoration: underline;
+        }
+
+        .division-dropdown {
+            position: relative;
+            overflow: visible;
+        }
+        .division-dropdown input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        .division-dropdown input:focus {
+            border-color: #4a6cf7;
+            outline: none;
+        }
+        .division-list {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            margin-top: 4px;
+            max-height: 240px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10;
+            display: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .division-list.open {
+            display: block;
+        }
+        .division-list .division-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .division-list-inner {
+            padding-bottom: 20px;
+        }
+        .division-list .division-option:hover {
+            background: #f0f5ff;
+        }
+        .division-list .division-option.no-match {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Daftar Akaun</h1>
+        </div>
+        <div class="form-container">
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="Enter your email" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password (min 6 characters)" required minlength="6">
+            </div>
+            <div class="input-group division-dropdown">
+                <label for="divisionInput">Bahagian/Zon/Unit (Division)</label>
+                <input type="text" id="divisionInput" placeholder="Search or select division..." autocomplete="off">
+                <input type="hidden" id="division" name="division">
+                <div class="division-list" id="divisionList"></div>
+            </div>
+            <button class="btn" id="registerBtn">Daftar</button>
+            <div class="message" id="registerMessage"></div>
+
+            <div class="info">
+                Already have an account? <a href="login.html">Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="common.js"></script>
+    <script>
+        const auth = getAuth();
+        const db = getDb();
+
+        const registerBtn = document.getElementById('registerBtn');
+        const registerMessage = document.getElementById('registerMessage');
+        const divisionInput = document.getElementById('divisionInput');
+        const divisionHidden = document.getElementById('division');
+        const divisionListEl = document.getElementById('divisionList');
+
+        const DIVISIONS = Array.from({ length: 48 }, (_, i) => 'Division ' + (i + 1));
+
+        function buildDivisionList() {
+            const optionsHtml = DIVISIONS.map(d => 
+                '<div class="division-option" data-value="' + d.replace(/"/g, '&quot;') + '">' + d + '</div>'
+            ).join('');
+            divisionListEl.innerHTML = '<div class="division-list-inner">' + optionsHtml + '</div>';
+            const inner = divisionListEl.querySelector('.division-list-inner');
+            if (inner) {
+                inner.querySelectorAll('.division-option').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const val = el.getAttribute('data-value');
+                        divisionInput.value = val;
+                        divisionHidden.value = val;
+                        divisionListEl.classList.remove('open');
+                    });
+                });
+            }
+        }
+
+        function filterDivisionList() {
+            const q = (divisionInput.value || '').trim().toLowerCase();
+            const opts = divisionListEl.querySelectorAll('.division-option');
+            opts.forEach(el => {
+                const text = (el.getAttribute('data-value') || '').toLowerCase();
+                el.classList.toggle('no-match', q && text.indexOf(q) === -1);
+            });
+        }
+
+        divisionInput.addEventListener('focus', () => {
+            divisionListEl.classList.add('open');
+            filterDivisionList();
+        });
+        divisionInput.addEventListener('input', filterDivisionList);
+        divisionInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') divisionListEl.classList.remove('open');
+        });
+        divisionListEl.addEventListener('mousedown', (e) => e.preventDefault());
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.division-dropdown')) divisionListEl.classList.remove('open');
+        });
+        buildDivisionList();
+
+        function normalizeDivision(val) {
+            return (val || '').trim().toLowerCase();
+        }
+
+        registerBtn.addEventListener('click', async () => {
+            const email = (document.getElementById('email').value || '').trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            const division = (divisionHidden.value || divisionInput.value || '').trim();
+
+            if (!email || !password || !division) {
+                registerMessage.textContent = 'Please fill in all fields and select a division.';
+                registerMessage.classList.remove('success-message');
+                return;
+            }
+            if (!DIVISIONS.includes(division)) {
+                registerMessage.textContent = 'Please select a division from the list.';
+                registerMessage.classList.remove('success-message');
+                return;
+            }
+
+            if (password.length < 6) {
+                registerMessage.textContent = 'Password must be at least 6 characters.';
+                registerMessage.classList.remove('success-message');
+                return;
+            }
+
+            registerMessage.textContent = 'Creating account...';
+            registerMessage.classList.remove('success-message');
+
+            try {
+                const divisionKey = normalizeDivision(division);
+                const divisionRef = db.collection('divisionLookup').doc(divisionKey);
+
+                const existingDoc = await divisionRef.get();
+                if (existingDoc.exists) {
+                    registerMessage.textContent = 'This division is already registered. Use a different division or log in with your email.';
+                    registerMessage.classList.remove('success-message');
+                    return;
+                }
+
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                const user = cred.user;
+
+                await divisionRef.set({ email: email });
+                await db.collection('userRoles').doc(email).set({
+                    role: 'pending',
+                    division: division,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                await auth.signOut();
+                registerMessage.textContent = 'Registration submitted. Your account is pending admin approval. You can try logging in later once an admin has approved your request.';
+                registerMessage.classList.add('success-message');
+            } catch (error) {
+                console.error('Registration error:', error);
+                registerMessage.classList.remove('success-message');
+                if (error.code === 'auth/email-already-in-use') {
+                    registerMessage.textContent = 'This email is already registered. Try logging in instead.';
+                } else if (error.code === 'auth/invalid-email') {
+                    registerMessage.textContent = 'Invalid email format.';
+                } else if (error.code === 'auth/weak-password') {
+                    registerMessage.textContent = 'Password must be at least 6 characters.';
+                } else if (error.code === 'permission-denied') {
+                    registerMessage.textContent = 'Firestore access denied. Add the divisionLookup rules: Firebase Console → Firestore → Rules. See firestore.rules in this project.';
+                } else {
+                    registerMessage.textContent = 'Registration error: ' + (error.message || 'Please try again.');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ms">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Table - KKP Reports</title>
+    <title>Data Laporan - KKP</title>
+    <link rel="stylesheet" href="common.css">
     <style>
         * {
             box-sizing: border-box;
@@ -761,9 +762,15 @@
         }
     </style>
 
-    <!-- Add Firebase SDK -->
+    <!-- External libraries for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="common.js"></script>
 </head>
 <body>
     <!-- PDF Viewer Modal -->
@@ -788,16 +795,17 @@
     </div>
 
     <div class="header">
-        <h1>Data Table - KKP Reports</h1>
+        <h1>Data Laporan KKP</h1>
         <div>
-            <a href="index.html" class="back-btn">Back to Dashboard</a>
-            <button class="logout-btn" id="logoutBtn">Logout</button>
+            <a href="index.html" class="back-btn">Laman Utama</a>
+            <button class="logout-btn" id="logoutBtn">Log Keluar</button>
         </div>
     </div>
     
     <div class="data-container">
+        <nav class="breadcrumb" aria-label="Navigasi"><a href="index.html">Laman Utama</a> &gt; <strong>Data Laporan</strong></nav>
         <div class="page-title">
-            <h2>KKP Reports Data</h2>
+            <h2>Data Laporan KKP</h2>
             <p>View and manage all submitted KKP reports</p>
         </div>
         
@@ -900,20 +908,9 @@
     </div>
 
     <script>
-        // Your Firebase config
-        const firebaseConfig = {
-            apiKey: "AIzaSyAjMn3H2FKy87-m6VDq9AuPKt5CqMBy8K4",
-            authDomain: "lpkkp-ed2c7.firebaseapp.com",
-            projectId: "lpkkp-ed2c7",
-            storageBucket: "lpkkp-ed2c7.firebasestorage.app",
-            messagingSenderId: "627472582025",
-            appId: "1:627472582025:web:f9c96d7f5c02437e4d8d58",
-            measurementId: "G-6WM3EKJGMV"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const db = getDb();
+        const auth = getAuth();
+        if (window.jspdf && window.jspdf.jsPDF) window.jsPDF = window.jspdf.jsPDF;
 
         // Get DOM elements
         const logoutBtn = document.getElementById('logoutBtn');
@@ -965,6 +962,8 @@
         let totalReports = 0;
         let searchTimeout = null;
         let isSearching = false;
+
+        // Auth guard: require login; admins see all reports, users see only their division
 
         // Export configuration options
         const exportOptions = {
@@ -1096,17 +1095,54 @@
             };
         }
 
-        // Check if user is logged in
+        function loadReportsForDivision(division) {
+            tableBody.innerHTML = '<tr><td colspan="9" class="loading">Memuatkan laporan bahagian anda...</td></tr>';
+            db.collection('kkpReports')
+                .where('division', '==', division)
+                .orderBy('createdAt', 'desc')
+                .get()
+                .then((querySnapshot) => {
+                    allReports = [];
+                    querySnapshot.forEach((doc) => {
+                        const report = doc.data();
+                        report.id = doc.id;
+                        allReports.push(report);
+                    });
+                    totalReports = allReports.length;
+                    loadDivisionFilter();
+                    applyFilters();
+                    updateSearchResultsInfo();
+                })
+                .catch((error) => {
+                    console.error('Error loading reports:', error);
+                    tableBody.innerHTML = '<tr><td colspan="9" class="error-message">Ralat memuatkan laporan. Sila cuba lagi.</td></tr>';
+                });
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
-            const savedEmail = localStorage.getItem('userEmail');
-            if (!savedEmail) {
-                window.location.href = 'login.html';
-            } else {
-                loadAllReports();
-                setupEventListeners();
-                setupDefaultDates();
-                setupEnhancedExportListeners();
-            }
+            requireAuth(() => {
+                getUserRoleAndDivision((err, info) => {
+                    if (err || !info) {
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    if (info.role === 'admin') {
+                        loadAllReports();
+                    } else if (info.division) {
+                        loadReportsForDivision(info.division);
+                    } else {
+                        allReports = [];
+                        totalReports = 0;
+                        tableBody.innerHTML = '<tr><td colspan="9">Tiada bahagian ditetapkan. Sila hubungi pentadbir.</td></tr>';
+                        loadDivisionFilter();
+                        applyFilters();
+                        updateSearchResultsInfo();
+                    }
+                    setupEventListeners();
+                    setupDefaultDates();
+                    setupEnhancedExportListeners();
+                });
+            });
         });
 
         // Set default date range to January 1 - December 31 of current year
@@ -1774,34 +1810,318 @@
             lastBtn.disabled = currentPage === totalPages || totalPages === 0;
         }
 
-        // View PDF in modal
+        // Helpers to reuse PDF structure from form.html
+        function addLogoToPdf(doc) {
+            try {
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                doc.text('', 160, 20);
+            } catch (error) {
+                console.log('Logo not added, continuing without it');
+            }
+        }
+
+        function addDocumentTitle(doc, yPosition) {
+            doc.setFontSize(11.5);
+            doc.setTextColor(40, 40, 40);
+            doc.text("BAHAGIAN TEKNOLOGI MAKLUMAT DAN KOMUNIKASI &", 105, yPosition, { align: 'center' });
+            yPosition += 5;
+            doc.text("KESELAMATAN KESIHATAN PEKERJAAN", 105, yPosition, { align: 'center' });
+            yPosition += 5;
+            doc.text("LAPORAN PRESTASI KESELAMATAN & KESIHATAN PEKERJAAN (KKP)", 105, yPosition, { align: 'center' });
+            yPosition += 10;
+
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.3);
+            doc.line(15, yPosition, 195, yPosition);
+            yPosition += 12;
+
+            return yPosition;
+        }
+
+        function addDivisionInfo(doc, data, date, yPosition) {
+            doc.setFontSize(11.5);
+            doc.setTextColor(0, 0, 0);
+            doc.text("MAKLUMAT BAHAGIAN/ZON/UNIT", 15, yPosition);
+            yPosition += 6;
+
+            const infoData = [
+                ["Bahagian/Zon/Unit", data.division],
+                ["Suku Pelaporan", data.quarter],
+                ["Tarikh Laporan", date]
+            ];
+
+            doc.autoTable({
+                startY: yPosition,
+                body: infoData,
+                theme: 'grid',
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 2,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 6
+                },
+                margin: { left: 15, right: 15 },
+                tableWidth: 'auto'
+            });
+
+            return doc.lastAutoTable.finalY + 8;
+        }
+
+        function addSectionA(doc, data, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text("SEKSYEN A : STATISTIK", 15, yPosition);
+            yPosition += 6;
+
+            const sectionA = [
+                ["1. Jumlah Bilangan Pekerja", data.totalWorkers, data.totalWorkersYTD],
+                ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD]
+            ];
+
+            doc.autoTable({
+                startY: yPosition,
+                head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
+                body: sectionA,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [13, 59, 44],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10,
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { cellWidth: 'auto', halign: 'left' },
+                    1: { cellWidth: 25, halign: 'center' },
+                    2: { cellWidth: 35, halign: 'center' }
+                },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 3,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 7
+                },
+                margin: { left: 15, right: 15 }
+            });
+
+            return doc.lastAutoTable.finalY + 8;
+        }
+
+        function addSectionB(doc, data, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text("SEKSYEN B : REKOD KES KEMALANGAN", 15, yPosition);
+            yPosition += 6;
+
+            const sectionB = [
+                ["1. Kes Kemalangan Major (Cuti Sakit >= 5 Hari)", "", ""],
+                ["1.1 Kes Kematian", data.deathCases, data.deathCasesYTD],
+                ["1.2 Kes Kemalangan Parah (Cuti Sakit >= 5 Hari)", data.severeAccidents, data.severeAccidentsYTD],
+                ["2. Kes Kemalangan Minor (Cuti Sakit < 5 Hari)", "", ""],
+                ["2.1 Kes Rawatan Perubatan", data.medicalCases, data.medicalCasesYTD],
+                ["2.2 Kes Rawatan Kecil (First Aid)", data.firstAidCases, data.firstAidCasesYTD],
+                ["3. Kes Kemalangan Tiada Kecederaan", "", ""],
+                ["3.1 Kebakaran", data.fireCases, data.fireCasesYTD],
+                ["3.2 Kerosakan Harta Benda", data.propertyDamage, data.propertyDamageYTD],
+                ["3.3 Kejadian Hampir (Near Miss)", data.nearMiss, data.nearMissYTD],
+                ["3.4 Lain-lain insiden", data.otherIncidents, data.otherIncidentsYTD]
+            ];
+
+            doc.autoTable({
+                startY: yPosition,
+                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN KES TAHUN INI']],
+                body: sectionB,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [13, 59, 44],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10,
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { cellWidth: 'auto', halign: 'left' },
+                    1: { cellWidth: 25, halign: 'center' },
+                    2: { cellWidth: 35, halign: 'center' }
+                },
+                styles: {
+                    fontSize: 9.5,
+                    cellPadding: 3,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 7
+                },
+                margin: { left: 15, right: 15 },
+                didParseCell: function(dataCell) {
+                    if (dataCell.cell.raw === "" && (dataCell.row.index === 0 || dataCell.row.index === 3 || dataCell.row.index === 6)) {
+                        dataCell.cell.styles.fillColor = [240, 240, 240];
+                        dataCell.cell.styles.fontStyle = 'bold';
+                        dataCell.cell.styles.halign = 'left';
+                    }
+                }
+            });
+
+            return doc.lastAutoTable.finalY + 8;
+        }
+
+        function addSectionC(doc, data, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text("SEKSYEN C : REKOD KES BERKAITAN KESIHATAN", 15, yPosition);
+            yPosition += 6;
+
+            const sectionC = [
+                ["1. Kes Penyakit Pekerjaan", data.occupationalDisease, data.occupationalDiseaseYTD],
+                ["2. Kes Penyakit Berjangkit", data.infectiousDisease, data.infectiousDiseaseYTD]
+            ];
+
+            doc.autoTable({
+                startY: yPosition,
+                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN KES TAHUN INI']],
+                body: sectionC,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [13, 59, 44],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10,
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { cellWidth: 'auto', halign: 'left' },
+                    1: { cellWidth: 25, halign: 'center' },
+                    2: { cellWidth: 35, halign: 'center' }
+                },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 3,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 7
+                },
+                margin: { left: 15, right: 15 }
+            });
+
+            return doc.lastAutoTable.finalY + 8;
+        }
+
+        function addSectionD(doc, data, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text("SEKSYEN D : PROGRAM KKP", 15, yPosition);
+            yPosition += 6;
+
+            const sectionD = [
+                ["1. Jumlah Mesyuarat KKP", data.meetings, data.meetingsYTD],
+                ["2. Jumlah Latihan KKP", data.trainings, data.trainingsYTD],
+                ["3. Jumlah Taklimat/Toolbox", data.briefings, data.briefingsYTD],
+                ["4. Jumlah Pemeriksaan KKP (Pemeriksaan Dalaman & Luaran)", data.inspections, data.inspectionsYTD],
+                ["5. Pelaporan Unsafe Act Unsafe Condition (UAUC)", data.uauc, data.uaucYTD],
+                ["6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP)", data.otherActivities, data.otherActivitiesYTD]
+            ];
+
+            doc.autoTable({
+                startY: yPosition,
+                head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
+                body: sectionD,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [13, 59, 44],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10,
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { cellWidth: 'auto', halign: 'left' },
+                    1: { cellWidth: 25, halign: 'center' },
+                    2: { cellWidth: 35, halign: 'center' }
+                },
+                styles: {
+                    fontSize: 9.5,
+                    cellPadding: 3,
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2,
+                    minCellHeight: 7
+                },
+                margin: { left: 15, right: 15 }
+            });
+
+            return doc.lastAutoTable.finalY + 8;
+        }
+
+        function addSectionE(doc, data, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text("SEKSYEN E : PERAKUAN", 15, yPosition);
+            yPosition += 10;
+
+            doc.setFontSize(10);
+            doc.text("Saya dengan ini memperakui bahawa maklumat yang diberikan dalam laporan ini adalah benar dan tepat.", 20, yPosition);
+            yPosition += 5;
+
+            doc.text("Nama Pegawai yang Melengkapkan:", 20, yPosition);
+            doc.text(data.certifierName || '', 79, yPosition);
+            yPosition += 15;
+
+            return yPosition;
+        }
+
+        function generatePdfFromReport(report) {
+            const doc = new jsPDF();
+            const dateStr = report.reportDate
+                ? new Date(report.reportDate).toLocaleDateString('ms-MY')
+                : '';
+            let yPosition = 15;
+
+            addLogoToPdf(doc);
+            yPosition = addDocumentTitle(doc, yPosition);
+            yPosition = addDivisionInfo(doc, report, dateStr, yPosition);
+            yPosition = addSectionA(doc, report, yPosition);
+            yPosition = addSectionB(doc, report, yPosition);
+
+            if (yPosition > 150) {
+                doc.addPage();
+                yPosition = 15;
+            }
+
+            yPosition = addSectionC(doc, report, yPosition);
+            yPosition = addSectionD(doc, report, yPosition);
+
+            if (yPosition > 180) {
+                doc.addPage();
+                yPosition = 15;
+            }
+
+            yPosition = addSectionE(doc, report, yPosition);
+            return doc;
+        }
+
+        // View PDF in modal (regenerated on demand)
         function viewPdf(reportId) {
             const report = allReports.find(r => r.id === reportId);
-            if (!report || !report.pdfData) {
-                alert('PDF not available for this report');
+            if (!report) {
+                alert('Report data not found');
                 return;
             }
-            
+
+            const doc = generatePdfFromReport(report);
+            const pdfBase64 = doc.output('datauristring');
+
             pdfTitle.textContent = `KKP Report - ${safeGetValue(report.division)} - ${safeGetValue(report.quarter)}`;
-            pdfViewer.src = report.pdfData;
+            pdfViewer.src = pdfBase64;
             pdfModal.style.display = 'block';
         }
 
-        // Download the EXACT PDF that was originally generated
+        // Download regenerated PDF matching current saved data
         function downloadReport(reportId) {
             const report = allReports.find(r => r.id === reportId);
-            if (!report || !report.pdfData) {
-                alert('PDF not available for this report');
+            if (!report) {
+                alert('Report data not found');
                 return;
             }
-            
-            const link = document.createElement('a');
-            link.href = report.pdfData;
-            link.download = `KKP_Report_${safeGetValue(report.division, 'Unknown')}_${safeGetValue(report.quarter, 'Unknown')}.pdf`;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+
+            const doc = generatePdfFromReport(report);
+            const fileName = `KKP_Report_${safeGetValue(report.division, 'Unknown')}_${safeGetValue(report.quarter, 'Unknown')}.pdf`;
+            doc.save(fileName);
         }
 
         // =========================================================================

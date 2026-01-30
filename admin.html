@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Pengurusan Pengguna</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 1200px;
+            background: #4a6cf7;
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title { display: flex; flex-direction: column; gap: 4px; }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .header span { font-size: 14px; color: rgba(255,255,255,0.9); }
+
+        .header-actions { display: flex; gap: 10px; }
+
+        .btn {
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover { background: #5a6268; }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            margin: 0 auto;
+        }
+
+        .info-banner {
+            margin-bottom: 24px;
+            padding: 16px;
+            border: 1px solid #ddd;
+            background: #f8f9fa;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .info-banner strong { display: block; margin-bottom: 4px; color: #333; }
+
+        .pending-approvals-section {
+            margin-bottom: 24px;
+            padding: 16px;
+            border: 1px solid #ffc107;
+            background: #fff8e6;
+            border-radius: 5px;
+        }
+
+        .pending-approvals-section strong { display: block; margin-bottom: 4px; color: #856404; }
+        .pending-desc { font-size: 13px; color: #856404; margin-bottom: 12px; }
+        .pending-list { display: flex; flex-wrap: wrap; gap: 12px; }
+        .pending-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .pending-item span { flex: 1; }
+        .pending-item .btn-approve { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .pending-item .btn-approve:hover { background: #218838; }
+        .pending-item .btn-deny { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .pending-item .btn-deny:hover { background: #c82333; }
+        .pending-empty { color: #856404; font-size: 14px; }
+        .pending-approvals-section.hidden { display: none; }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+            align-items: center;
+        }
+
+        .filters label { font-size: 14px; color: #666; }
+
+        .filters select,
+        .filters input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        th {
+            background: #4a6cf7;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) { background: #f8f9fa; }
+
+        .role-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .role-admin {
+            background: rgba(220, 53, 69, 0.15);
+            color: #c82333;
+        }
+
+        .role-user {
+            background: rgba(74, 108, 247, 0.15);
+            color: #4a6cf7;
+        }
+
+        .role-pending {
+            background: rgba(201, 162, 39, 0.2);
+            color: #856404;
+        }
+
+        .role-denied {
+            background: rgba(108, 117, 125, 0.2);
+            color: #495057;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+
+        .status-active {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-disabled {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .actions-cell button {
+            margin-right: 6px;
+            margin-bottom: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-small-primary {
+            background: #4a6cf7;
+            color: white;
+        }
+
+        .btn-small-primary:hover { background: #3a5cd8; }
+
+        .btn-small-outline {
+            background: white;
+            color: #4a6cf7;
+            border: 1px solid #4a6cf7;
+        }
+
+        .btn-delete { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-delete:hover { background: #c82333; }
+        .btn-small-outline:hover {
+            background: rgba(74, 108, 247, 0.08);
+        }
+
+        .message {
+            margin-top: 15px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        .message.success {
+            color: #0f5132;
+        }
+
+        .message.error {
+            color: #842029;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            th:nth-child(2),
+            td:nth-child(2),
+            th:nth-child(4),
+            td:nth-child(4) {
+                display: none;
+            }
+        }
+    </style>
+
+    <script src="config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="common.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <h1>Panel Admin</h1>
+            <span id="adminInfo">Memuatkan...</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" id="backBtn">Laman Utama</button>
+            <button class="btn btn-danger" id="logoutBtn">Log Keluar</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Navigasi"><a href="index.html">Laman Utama</a> &gt; <strong>Admin</strong></nav>
+        <div class="info-banner">
+            <strong>Admin access</strong>
+            This page is for administrators only. You can view users and manage simple roles stored in Firestore (e.g. <code>admin</code> / <code>user</code>).
+        </div>
+
+        <div class="pending-approvals-section hidden" id="pendingApprovalsSection">
+            <strong>Pending approvals</strong>
+            <p class="pending-desc">New registrations waiting for your approval. Accept to grant access; Deny to reject.</p>
+            <div id="pendingApprovalsList" class="pending-list">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <div class="filters">
+            <div>
+                <label for="roleFilter">Filter by role:</label>
+                <select id="roleFilter">
+                    <option value="all">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="admin">Admin</option>
+                    <option value="user">User</option>
+                    <option value="denied">Denied</option>
+                    <option value="none">No role set</option>
+                </select>
+            </div>
+            <div>
+                <label for="searchInput">Search email or division:</label>
+                <input id="searchInput" type="text" placeholder="Type email or division...">
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Division</th>
+                    <th>Role</th>
+                    <th>Created at</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody">
+                <!-- Filled by JS -->
+            </tbody>
+        </table>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const auth = getAuth();
+        const db = getDb();
+
+        const adminInfoEl = document.getElementById('adminInfo');
+        const backBtn = document.getElementById('backBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const usersTableBody = document.getElementById('usersTableBody');
+        const roleFilter = document.getElementById('roleFilter');
+        const searchInput = document.getElementById('searchInput');
+        const messageEl = document.getElementById('message');
+
+        let allUsers = [];
+
+        function showMessage(text, type = 'success') {
+            messageEl.textContent = text;
+            messageEl.className = 'message ' + (type === 'error' ? 'error' : 'success');
+        }
+
+        function clearMessage() {
+            messageEl.textContent = '';
+            messageEl.className = 'message';
+        }
+
+        function onAdminReady(user) {
+            const email = (user.email || '').toLowerCase().trim();
+            adminInfoEl.textContent = 'Admin: ' + email;
+            loadUsers();
+        }
+
+        function loadUsers() {
+            clearMessage();
+            usersTableBody.innerHTML = '<tr><td colspan="6">Loading users...</td></tr>';
+
+            // Simple admin user listing based on userRoles + optional metadata collection.
+            db.collection('userRoles').get().then(snapshot => {
+                allUsers = [];
+                snapshot.forEach(doc => {
+                    const email = doc.id;
+                    const data = doc.data() || {};
+                    allUsers.push({
+                        email,
+                        division: data.division || '-',
+                        role: data.role || 'user',
+                        status: data.disabled ? 'disabled' : 'active',
+                        createdAt: data.createdAt ? data.createdAt.toDate() : null
+                    });
+                });
+
+                renderPendingApprovals();
+                renderUsers();
+            }).catch(err => {
+                console.error('Error loading users:', err);
+                usersTableBody.innerHTML = '<tr><td colspan="6">Failed to load users.</td></tr>';
+                showMessage('Failed to load users.', 'error');
+            });
+        }
+
+        function renderPendingApprovals() {
+            const section = document.getElementById('pendingApprovalsSection');
+            const pendingList = document.getElementById('pendingApprovalsList');
+            const pending = allUsers.filter(u => u.role === 'pending');
+            if (pending.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+            section.classList.remove('hidden');
+            pendingList.innerHTML = pending.map(u => {
+                const createdText = u.createdAt ? u.createdAt.toLocaleDateString('ms-MY') : '-';
+                const emailEsc = (u.email || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const divisionEsc = (u.division || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                return `<div class="pending-item">
+                    <span>${u.email} · ${u.division || '-'} · ${createdText}</span>
+                    <button class="btn-approve" onclick="setRole('${emailEsc}','user')">Accept</button>
+                    <button class="btn-deny" onclick="setRole('${emailEsc}','denied')">Deny</button>
+                    <button class="btn-delete" onclick="deleteUser('${emailEsc}','${divisionEsc}')">Padam</button>
+                </div>`;
+            }).join('');
+        }
+
+        function renderUsers() {
+            const roleValue = roleFilter.value;
+            const search = (searchInput.value || '').toLowerCase();
+
+            const visible = allUsers.filter(u => {
+                if (roleValue === 'admin' && u.role !== 'admin') return false;
+                if (roleValue === 'user' && u.role !== 'user') return false;
+                if (roleValue === 'pending' && u.role !== 'pending') return false;
+                if (roleValue === 'denied' && u.role !== 'denied') return false;
+                if (roleValue === 'none' && u.role) return false;
+                if (search && !u.email.toLowerCase().includes(search) && !String(u.division || '').toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            if (!visible.length) {
+                usersTableBody.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
+                return;
+            }
+
+            usersTableBody.innerHTML = visible.map(u => {
+                const roleClass = u.role === 'admin' ? 'role-admin'
+                                : u.role === 'user' ? 'role-user'
+                                : u.role === 'denied' ? 'role-denied'
+                                : 'role-pending';
+                const statusClass = u.status === 'disabled' ? 'status-disabled' : 'status-active';
+                const createdText = u.createdAt
+                    ? u.createdAt.toLocaleDateString('ms-MY')
+                    : '-';
+                const emailEsc = (u.email || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const divisionEsc = (u.division || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const actions = u.role === 'pending'
+                    ? `<button class="btn-approve" onclick="setRole('${emailEsc}','user')">Accept</button>
+                       <button class="btn-deny" onclick="setRole('${emailEsc}','denied')">Deny</button>
+                       <button class="btn-delete" onclick="deleteUser('${emailEsc}','${divisionEsc}')">Padam</button>`
+                    : u.role === 'denied'
+                    ? `<button class="btn-delete" onclick="deleteUser('${emailEsc}','${divisionEsc}')">Padam</button>`
+                    : `<button class="btn-small-primary" onclick="setRole('${emailEsc}','admin')">Make admin</button>
+                       <button class="btn-small-outline" onclick="setRole('${emailEsc}','user')">Make user</button>
+                       <button class="btn-delete" onclick="deleteUser('${emailEsc}','${divisionEsc}')">Padam</button>`;
+
+                return `
+                    <tr>
+                        <td>${u.email}</td>
+                        <td>${u.division || '-'}</td>
+                        <td><span class="role-pill ${roleClass}">${u.role || 'none'}</span></td>
+                        <td>${createdText}</td>
+                        <td><span class="status-pill ${statusClass}">${u.status}</span></td>
+                        <td class="actions-cell">${actions}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        window.setRole = function(email, role) {
+            clearMessage();
+            const docRef = db.collection('userRoles').doc(email);
+            const byEmail = (auth.currentUser && auth.currentUser.email) || '';
+            docRef.set({
+                role,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).then(() => {
+                return db.collection('auditLog').add({
+                    action: 'role_update',
+                    targetEmail: email,
+                    newRole: role,
+                    by: byEmail,
+                    at: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }).then(() => {
+                showMessage('Peranan dikemas kini: ' + email + ' → ' + role);
+                const idx = allUsers.findIndex(u => u.email === email);
+                if (idx !== -1) {
+                    allUsers[idx].role = role;
+                    renderPendingApprovals();
+                    renderUsers();
+                }
+            }).catch(err => {
+                console.error('Error updating role:', err);
+                showMessage('Gagal mengemas kini peranan.', 'error');
+            });
+        };
+
+        function normalizeDivision(val) {
+            return (val || '').trim().toLowerCase();
+        }
+
+        window.deleteUser = function(email, division) {
+            const currentEmail = (auth.currentUser && auth.currentUser.email || '').toLowerCase();
+            if (email.toLowerCase() === currentEmail) {
+                if (!confirm('Anda memadam akaun anda sendiri. Anda akan dilog keluar. Teruskan?')) return;
+            } else if (!confirm('Padam akaun pengguna ini?\n\n' + email + '\n\nPengguna tidak akan dapat log masuk lagi. Rekod userRoles dan divisionLookup akan dipadam.')) return;
+            clearMessage();
+            const byEmail = (auth.currentUser && auth.currentUser.email) || '';
+            const userRolesRef = db.collection('userRoles').doc(email);
+            userRolesRef.delete()
+                .then(() => {
+                    if (division && division !== '-' && division.trim()) {
+                        const divKey = normalizeDivision(division);
+                        return db.collection('divisionLookup').doc(divKey).get()
+                            .then(snap => {
+                                if (snap.exists && (snap.data().email || '').toLowerCase() === email.toLowerCase()) {
+                                    return db.collection('divisionLookup').doc(divKey).delete();
+                                }
+                            });
+                    }
+                })
+                .then(() => {
+                    return db.collection('auditLog').add({
+                        action: 'user_deleted',
+                        targetEmail: email,
+                        by: byEmail,
+                        at: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                })
+                .then(() => {
+                    showMessage('Akaun dipadam: ' + email);
+                    allUsers = allUsers.filter(u => u.email !== email);
+                    renderPendingApprovals();
+                    renderUsers();
+                    if (email.toLowerCase() === (auth.currentUser && auth.currentUser.email || '').toLowerCase()) {
+                        auth.signOut();
+                        window.location.href = 'login.html?msg=removed';
+                    }
+                })
+                .catch(err => {
+                    console.error('Error deleting user:', err);
+                    showMessage('Gagal memadam akaun.', 'error');
+                });
+        };
+
+        backBtn.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut().finally(() => {
+                localStorage.removeItem('userEmail');
+                window.location.href = 'login.html';
+            });
+        });
+
+        roleFilter.addEventListener('change', renderUsers);
+        searchInput.addEventListener('input', () => {
+            renderUsers();
+        });
+
+        requireAdmin(onAdminReady);
+    </script>
+</body>
+</html>
+

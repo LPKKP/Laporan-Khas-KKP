@@ -4,15 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Borang Laporan Prestasi Bulanan KKP</title>
-    
-    <!-- External libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    
-    <!-- Add Firebase SDK -->
+    <link rel="stylesheet" href="common.css">
+    <!-- Firebase + common (jsPDF loaded on demand) -->
+    <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    
+    <script src="common.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -304,6 +302,11 @@
             font-size: 13px;
         }
         
+        #division[readonly] {
+            background-color: #f0f5ff;
+            cursor: not-allowed;
+        }
+        
         /* Certification Section Styles */
         .certification-section {
             margin-bottom: 18px;
@@ -353,22 +356,123 @@
             margin-top: 8px;
         }
         
+        /* Image slots (Lampiran) */
+        .images-section {
+            margin-bottom: 18px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .images-section .section-title {
+            margin-bottom: 10px;
+        }
+        .image-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .image-slot {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+        .image-slot .slot-label {
+            font-weight: 600;
+            color: #4a6cf7;
+            min-width: 70px;
+            font-size: 13px;
+        }
+        .image-slot .slot-thumb {
+            width: 80px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background: #eee;
+        }
+        .image-slot .slot-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .image-slot .slot-body input[type="text"] {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .image-slot .slot-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .image-slot .file-input-wrap {
+            position: relative;
+            display: inline-block;
+            min-width: 120px;
+            min-height: 36px;
+        }
+        .image-slot .file-input-wrap input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            font-size: 0;
+        }
+        .btn-slot-add {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .btn-slot-add:hover { background: #218838; }
+        .btn-slot-remove {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .btn-slot-remove:hover { background: #c82333; }
+        .image-slot.uploading .slot-thumb { opacity: 0.6; }
+        
     </style>
 </head>
 <body>
-    <!-- Hidden download link for guide PDF -->
     <a id="guideDownloadLink" style="display: none;"></a>
     
-    <!-- Header Section -->
     <div class="header">
         <h1>BAHAGIAN TEKNOLOGI MAKLUMAT DAN KOMUNIKASI &<br>KESELAMATAN KESIHATAN PEKERJAAN<br>LAPORAN PRESTASI KESELAMATAN & KESIHATAN PEKERJAAN (KKP)</h1>
     </div>
     
-    <!-- Main Form Container -->
     <div class="container">
+        <nav class="breadcrumb" aria-label="Navigasi"><a href="index.html">Laman Utama</a> &gt; <strong>Borang Laporan</strong></nav>
+        <div class="notice-section draft-banner" id="draftBanner" style="display: none;">
+            <div class="notice-title"><i>📄</i> Draf disimpan</div>
+            <div class="notice-content">
+                <span class="notice-text">Anda mempunyai draf yang belum dihantar. Lanjutkan?</span>
+                <div class="notice-buttons">
+                    <button type="button" class="btn-notice" id="draftContinueBtn">Lanjutkan</button>
+                    <button type="button" class="btn-notice" style="background: #6c757d;" id="draftDiscardBtn">Buang</button>
+                </div>
+            </div>
+        </div>
         <form id="kkpForm">
             
-            <!-- New Notice Section -->
             <div class="notice-section">
                 <div class="notice-title">
                     <i>📋</i> PANDUAN MENGISI LAPORAN
@@ -388,7 +492,6 @@
                 </div>
             </div>
             
-            <!-- Section 1: Division Information -->
             <div class="form-section">
                 <div class="section-title">MAKLUMAT BAHAGIAN/ZON/UNIT</div>
                 <div class="info-group">
@@ -413,7 +516,6 @@
                 </div>
             </div>
 
-            <!-- Section 2: Statistics -->
             <div class="form-section">
                 <div class="section-title">SEKSYEN A : STATISTIK</div>
                 <div class="form-grid">
@@ -423,19 +525,18 @@
                     
                     <div class="form-row">
                         <label for="totalWorkers">1. Jumlah Bilangan Pekerja:</label>
-                        <input type="number" id="totalWorkers" name="totalWorkers" min="0" value="0">
-                        <input type="number" id="totalWorkersYTD" name="totalWorkersYTD" min="0" value="0">
+                        <input type="number" id="totalWorkers" name="totalWorkers" min="0" required>
+                        <input type="number" id="totalWorkersYTD" name="totalWorkersYTD" min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="sickLeave">2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan:</label>
-                        <input type="number" id="sickLeave" name="sickLeave" min="0" value="0">
-                        <input type="number" id="sickLeaveYTD" name="sickLeaveYTD" min="0" value="0">
+                        <input type="number" id="sickLeave" name="sickLeave" min="0" required>
+                        <input type="number" id="sickLeaveYTD" name="sickLeaveYTD" min="0" required>
                     </div>
                 </div>
             </div>
 
-            <!-- Section 3: Accident Records -->
             <div class="form-section">
                 <div class="section-title">SEKSYEN B : REKOD KES KEMALANGAN</div>
                 <div class="form-grid">
@@ -443,74 +544,68 @@
                     <div class="grid-header">BILANGAN KES</div>
                     <div class="grid-header">BILANGAN KES TAHUN INI</div>
                     
-                    <!-- 1. Major Accident Cases -->
                     <div class="form-row">
                         <div class="sub-section-title">1. Kes Kemalangan Major</div>
                     </div>
                     
                     <div class="form-row">
                         <label for="deathCases">1.1 Kes Kematian:</label>
-                        <input type="number" id="deathCases" name="deathCases" min="0" value="0">
-                        <input type="number" id="deathCasesYTD" name="deathCasesYTD" min="0" value="0">
+                        <input type="number" id="deathCases" name="deathCases" min="0" required>
+                        <input type="number" id="deathCasesYTD" name="deathCasesYTD" min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="severeAccidents">1.2 Kes Kemalangan Parah (Cuti Sakit ≥ 5 Hari):</label>
-                        <input type="number" id="severeAccidents" name="severeAccidents" min="0" value="0">
-                        <input type="number" id="severeAccidentsYTD" name="severeAccidentsYTD" min="0" value="0">
+                        <input type="number" id="severeAccidents" name="severeAccidents" min="0" required>
+                        <input type="number" id="severeAccidentsYTD" name="severeAccidentsYTD" min="0" required>
                     </div>
                     
-                    <!-- 2. Minor Accident Cases -->
                     <div class="form-row">
                         <div class="sub-section-title">2. Kes Kemalangan Minor</div>
                     </div>
                     
                     <div class="form-row">
                         <label for="medicalCases">2.1 Kes Rawatan Perubatan (Cuti Sakit < 5 Hari):</label>
-                        <input type="number" id="medicalCases" name="medicalCases" min="0" value="0">
-                        <input type="number" id="medicalCasesYTD" name="medicalCasesYTD" min="0" value="0">
+                        <input type="number" id="medicalCases" name="medicalCases" min="0" required>
+                        <input type="number" id="medicalCasesYTD" name="medicalCasesYTD" min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="firstAidCases">2.2 Kes Rawatan Kecil (First Aid):</label>
-                        <input type="number" id="firstAidCases" name="firstAidCases" min="0" value="0">
-                        <input type="number" id="firstAidCasesYTD" name="firstAidCasesYTD" min="0" value="0">
+                        <input type="number" id="firstAidCases" name="firstAidCases" min="0" required>
+                        <input type="number" id="firstAidCasesYTD" name="firstAidCasesYTD" min="0" required>
                     </div>
                     
-                    <!-- REMOVED: Penyakit Pekerjaan from here (moved to Seksyen C) -->
-                    
-                    <!-- 3. No Injury Accident Cases -->
                     <div class="form-row">
                         <div class="sub-section-title">3. Kes Kemalangan Tiada Kecederaan</div>
                     </div>
                     
                     <div class="form-row">
                         <label for="fireCases">3.1 Kes Kebakaran:</label>
-                        <input type="number" id="fireCases" name="fireCases" min="0" value="0">
-                        <input type="number" id="fireCasesYTD" name="fireCasesYTD" min="0" value="0">
+                        <input type="number" id="fireCases" name="fireCases" min="0" required>
+                        <input type="number" id="fireCasesYTD" name="fireCasesYTD" min="0" required>
                     </div>
                 
                     <div class="form-row">
                         <label for="propertyDamage">3.2 Kes Kerosakan Harta Benda:</label>
-                        <input type="number" id="propertyDamage" name="propertyDamage" min="0" value="0">
-                        <input type="number" id="propertyDamageYTD" name="propertyDamageYTD" min="0" value="0">
+                        <input type="number" id="propertyDamage" name="propertyDamage" min="0" required>
+                        <input type="number" id="propertyDamageYTD" name="propertyDamageYTD" min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="nearMiss">3.3 Kes Kejadian Hampir (Near Miss):</label>
-                        <input type="number" id="nearMiss" name="nearMiss" min="0" value="0">
-                        <input type="number" id="nearMissYTD" name="nearMissYTD" min="0" value="0">
+                        <input type="number" id="nearMiss" name="nearMiss" min="0" required>
+                        <input type="number" id="nearMissYTD" name="nearMissYTD" min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="otherIncidents">3.4 Lain-lain insiden:</label>
-                        <input type="number" id="otherIncidents" name="otherIncidents" min="0" value="0">
-                        <input type="number" id="otherIncidentsYTD" name="otherIncidentsYTD" min="0" value="0">
+                        <input type="number" id="otherIncidents" name="otherIncidents" min="0" required>
+                        <input type="number" id="otherIncidentsYTD" name="otherIncidentsYTD" min="0" required>
                     </div>
                 </div>
             </div>
 
-            <!-- Section 4: Health-related Cases -->
             <div class="form-section">
                 <div class="section-title">SEKSYEN C : REKOD KES BERKAITAN KESIHATAN</div>
                 <div class="form-grid">
@@ -518,23 +613,20 @@
                     <div class="grid-header">BILANGAN KES</div>
                     <div class="grid-header">BILANGAN KES TAHUN INI</div>
                     
-                    <!-- 1. Penyakit Pekerjaan (moved from Seksyen B) -->
                     <div class="form-row">
                         <label for="occupationalDisease">1. Kes Penyakit Pekerjaan:</label>
-                        <input type="number" id="occupationalDisease" name="occupationalDisease" min="0" value="0">
-                        <input type="number" id="occupationalDiseaseYTD" name="occupationalDiseaseYTD" min="0" value="0">
+                        <input type="number" id="occupationalDisease" name="occupationalDisease" min="0" required>
+                        <input type="number" id="occupationalDiseaseYTD" name="occupationalDiseaseYTD" min="0" required>
                     </div>
                     
-                    <!-- 2. Penyakit Berjangkit -->
                     <div class="form-row">
                         <label for="infectiousDisease">2. Kes Penyakit Berjangkit:</label>
-                        <input type="number" id="infectiousDisease" name="infectiousDisease" min="0" value="0">
-                        <input type="number" id="infectiousDiseaseYTD" name="infectiousDiseaseYTD" min="0" value="0">
+                        <input type="number" id="infectiousDisease" name="infectiousDisease" min="0" required>
+                        <input type="number" id="infectiousDiseaseYTD" name="infectiousDiseaseYTD" min="0" required>
                     </div>
                 </div>
             </div>
 
-            <!-- Section 5: OSH Programs -->
             <div class="form-section">
                 <div class="section-title">SEKSYEN D : PROGRAM KKP</div>
                 <div class="form-grid">
@@ -544,43 +636,48 @@
                     
                     <div class="form-row">
                         <label for="meetings">1. Jumlah Mesyuarat KKP:</label>
-                        <input type="number" id="meetings" name="meetings" min="0" value="0">
-                        <input type="number" id="meetingsYTD" name="meetingsYTD" min="0" value="0">
+                        <input type="number" id="meetings" name="meetings" min="0" required>
+                        <input type="number" id="meetingsYTD" name="meetingsYTD" min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="trainings">2. Jumlah Latihan KKP:</label>
-                        <input type="number" id="trainings" name="trainings" min="0" value="0">
-                        <input type="number" id="trainingsYTD" name='trainingsYTD' min="0" value="0">
+                        <input type="number" id="trainings" name="trainings" min="0" required>
+                        <input type="number" id="trainingsYTD" name='trainingsYTD' min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="briefings">3. Jumlah Taklimat/Toolbox:</label>
-                        <input type="number" id="briefings" name="briefings" min="0" value="0">
-                        <input type="number" id="briefingsYTD" name="briefingsYTD" min="0" value="0">
+                        <input type="number" id="briefings" name="briefings" min="0" required>
+                        <input type="number" id="briefingsYTD" name="briefingsYTD" min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="inspections">4. Jumlah Pemeriksaan KKP (Pemeriksaan Dalaman & Luaran):</label>
-                        <input type="number" id="inspections" name="inspections" min="0" value="0">
-                        <input type="number" id="inspectionsYTD" name="inspectionsYTD" min="0" value="0">
+                        <input type="number" id="inspections" name="inspections" min="0" required>
+                        <input type="number" id="inspectionsYTD" name="inspectionsYTD" min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="uauc">5. Pelaporan Unsafe Act Unsafe Condition (UAUC):</label>
-                        <input type="number" id="uauc" name="uauc" min="0" value="0">
-                        <input type="number" id="uaucYTD" name="uaucYTD" min="0" value="0">
+                        <input type="number" id="uauc" name="uauc" min="0" required>
+                        <input type="number" id="uaucYTD" name="uaucYTD" min="0" required>
                     </div>
                     
                     <div class="form-row">
                         <label for="otherActivities">6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP):</label>
-                        <input type="number" id="otherActivities" name="otherActivities" min="0" value="0">
-                        <input type="number" id="otherActivitiesYTD" name="otherActivitiesYTD" min="0" value="0">
+                        <input type="number" id="otherActivities" name="otherActivities" min="0" required>
+                        <input type="number" id="otherActivitiesYTD" name="otherActivitiesYTD" min="0" required>
                     </div>
                 </div>
             </div>
             
-            <!-- Section 6: Certification Section -->
+            <div class="form-section images-section">
+                <div class="section-title">LAMPIRAN / ATTACHMENTS (Foto – sehingga 20)</div>
+                <div class="image-slots" id="imageSlotsContainer"></div>
+                <button type="button" class="btn-slot-add" id="addImageSlotBtn">+ Tambah Foto</button>
+            </div>
+
             <div class="certification-section">
                 <div class="section-title">SEKSYEN E : PERAKUAN</div>
                 <div class="certification-content">
@@ -596,108 +693,356 @@
                 </div>
             </div>
             
-            <!-- Buttons -->
             <div class="button-container">
                 <button type="submit" class="btn btn-generate" id="submitBtn">Jana Laporan PDF</button>
                 <button type="button" class="btn btn-download" id="downloadBtn">Muat Turun PDF</button>
             </div>
         </form>
         
-        <!-- Result and fallback messages -->
         <div id="result"></div>
+        <div id="retryContainer" style="display: none; margin-top: 12px; text-align: center;">
+            <button type="button" class="btn btn-generate" id="retrySaveBtn">Cuba lagi</button>
+        </div>
         <div class="download-fallback" id="downloadFallback">
             Jika muat turun tidak bermula secara automatik, sila klik butang di atas.
         </div>
     </div>
 
     <script>
-        // Your Firebase config
-        const firebaseConfig = {
-            apiKey: "AIzaSyAjMn3H2FKy87-m6VDq9AuPKt5CqMBy8K4",
-            authDomain: "lpkkp-ed2c7.firebaseapp.com",
-            projectId: "lpkkp-ed2c7",
-            storageBucket: "lpkkp-ed2c7.firebasestorage.app",
-            messagingSenderId: "627472582025",
-            appId: "1:627472582025:web:f9c96d7f5c02437e4d8d58",
-            measurementId: "G-6WM3EKJGMV"
+        var CLOUDINARY_CONFIG = {
+            cloudName: 'dvgkrejzp',
+            uploadPreset: 'lpkkp_images'
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        var db = null;
+        var pdfData = null;
+        var currentReportId = null;
+        var imageSlots = [];
+        var MAX_IMAGE_SLOTS = 20;
+        var formIsDirty = false;
+        var DRAFT_KEY = 'kkpDraft';
+        var DRAFT_SAVE_INTERVAL_MS = 15000;
+        var draftSaveTimer = null;
+        var pendingReportDataForRetry = null;
 
-        // Make jsPDF available globally
-        window.jsPDF = window.jspdf.jsPDF;
-        
-        // Store PDF data for later download
-        let pdfData = null;
-        let currentReportId = null;
-
-        // Function to handle form submission
-        async function handleFormSubmit(event) {
-            event.preventDefault();
-            
-            // Disable submit button to prevent double submission
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Menjana dan Menyimpan...';
-            
-            // Collect all form data
-            const formData = collectFormData();
-            
-            try {
-                // Generate the PDF first
-                pdfData = generatePdf(formData);
-                
-                // Convert PDF to base64 for storage
-                const pdfBase64 = pdfData.output('datauristring');
-                
-                // Add timestamp, user info, and PDF data
-                const reportData = {
-                    ...formData,
-                    pdfData: pdfBase64, // Store the exact PDF
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    createdBy: localStorage.getItem('userEmail') || 'Unknown',
-                    status: 'submitted'
+        function resizeAndCompressImage(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    img.onload = function() {
+                        const maxW = 1200;
+                        let w = img.width, h = img.height;
+                        if (w > maxW) {
+                            h = (h * maxW) / w;
+                            w = maxW;
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        canvas.toBlob(function(blob) {
+                            if (blob) resolve(blob);
+                            else reject(new Error('Canvas toBlob failed'));
+                        }, 'image/jpeg', 0.8);
+                    };
+                    img.onerror = () => reject(new Error('Image load failed'));
+                    img.src = e.target.result;
                 };
-                
-                // Save to Firestore
-                const docRef = await db.collection("kkpReports").add(reportData);
-                currentReportId = docRef.id;
-                
-                // Show the download button
-                document.getElementById('downloadBtn').style.display = 'block';
-                
-                // Try to download automatically
-                const downloadSuccess = tryDownload(pdfData);
-                
-                // Show appropriate message based on download success
-                showResultMessage(downloadSuccess, true);
-                
-            } catch (error) {
-                console.error("Error saving report: ", error);
-                showResultMessage(false, false);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Jana Laporan PDF';
+                reader.onerror = () => reject(new Error('File read failed'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function uploadToCloudinary(blob) {
+            const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`;
+            const formData = new FormData();
+            formData.append('file', blob);
+            formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+            return fetch(url, { method: 'POST', body: formData })
+                .then(res => {
+                    if (!res.ok) throw new Error('Upload failed');
+                    return res.json();
+                })
+                .then(data => data.secure_url);
+        }
+
+        function renderImageSlots() {
+            const container = document.getElementById('imageSlotsContainer');
+            container.innerHTML = '';
+            imageSlots.forEach((slot, index) => {
+                const slotNum = index + 1;
+                const div = document.createElement('div');
+                div.className = 'image-slot' + (slot.uploading ? ' uploading' : '');
+                div.dataset.index = index;
+                const thumbSrc = slot.dataUrlForPdf || slot.url || '';
+                const hasImage = !!(slot.url || slot.dataUrlForPdf);
+                div.innerHTML = `
+                    <span class="slot-label">Foto ${slotNum}</span>
+                    ${hasImage ? `<img class="slot-thumb" src="${thumbSrc}" alt="Photo ${slotNum}"/>` : '<div class="slot-thumb" style="background:#ddd;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;">Pilih fail</div>'}
+                    <div class="slot-body">
+                        <div class="slot-actions">
+                            <div class="file-input-wrap">
+                                <input type="file" accept="image/*" data-index="${index}" aria-label="Pilih foto ${slotNum}"/>
+                                <button type="button" class="btn-notice" style="margin:0;">${hasImage ? 'Ganti' : 'Pilih gambar'}</button>
+                            </div>
+                            <button type="button" class="btn-slot-remove" data-index="${index}">Buang</button>
+                        </div>
+                        <input type="text" placeholder="Kapsyen (pilihan)" data-index="${index}" value="${(slot.caption || '').replace(/"/g, '&quot;')}"/>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            container.querySelectorAll('input[type="file"]').forEach(input => {
+                input.addEventListener('change', handleImageFileSelect);
+            });
+            container.querySelectorAll('.btn-slot-remove').forEach(btn => {
+                btn.addEventListener('click', handleRemoveSlot);
+            });
+        }
+
+        function initImageSlots() {
+            var container = document.getElementById('imageSlotsContainer');
+            var addBtn = document.getElementById('addImageSlotBtn');
+            if (!container) return;
+            if (imageSlots.length === 0) {
+                imageSlots = [
+                    { url: '', caption: '', dataUrlForPdf: null }
+                ];
+            }
+            renderImageSlots();
+            if (addBtn && !addBtn._slotListener) {
+                addBtn._slotListener = true;
+                addBtn.addEventListener('click', addImageSlot);
             }
         }
+
+        function handleImageFileSelect(e) {
+            var input = e.target;
+            var index = parseInt(input.getAttribute('data-index'), 10);
+            var file = input.files && input.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
+            if (!imageSlots[index]) return;
+            var slotEl = document.querySelector('#imageSlotsContainer .image-slot[data-index="' + index + '"]');
+            var currentCaption = slotEl ? (slotEl.querySelector('input[type="text"]') || {}).value || '' : (imageSlots[index].caption || '');
+            imageSlots[index].uploading = true;
+            renderImageSlots();
+            resizeAndCompressImage(file)
+                .then(function(blob) {
+                    var reader = new FileReader();
+                    reader.onload = function() {
+                        var dataUrl = reader.result;
+                        if (CLOUDINARY_CONFIG.cloudName && CLOUDINARY_CONFIG.cloudName !== 'YOUR_CLOUD_NAME') {
+                            uploadToCloudinary(blob).then(function(url) {
+                                imageSlots[index] = { url: url, caption: currentCaption, dataUrlForPdf: dataUrl };
+                                imageSlots[index].uploading = false;
+                                renderImageSlots();
+                            }).catch(function(err) {
+                                console.error(err);
+                                imageSlots[index].uploading = false;
+                                renderImageSlots();
+                                alert('Gagal memuat naik ke Cloudinary. Sila semak preset atau cuba lagi.');
+                            });
+                        } else {
+                            imageSlots[index] = { url: dataUrl, caption: currentCaption, dataUrlForPdf: dataUrl };
+                            imageSlots[index].uploading = false;
+                            renderImageSlots();
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                })
+                .catch(function(err) {
+                    console.error(err);
+                    imageSlots[index].uploading = false;
+                    renderImageSlots();
+                    alert('Gagal memuat naik gambar. Sila cuba lagi.');
+                });
+        }
+
+        function handleRemoveSlot(e) {
+            const index = parseInt(e.target.dataset.index, 10);
+            if (index < 0 || index >= imageSlots.length) return;
+            imageSlots.splice(index, 1);
+            renumberImageSlots();
+        }
+
+        function renumberImageSlots() {
+            renderImageSlots();
+        }
+
+        function addImageSlot() {
+            if (imageSlots.length >= MAX_IMAGE_SLOTS) {
+                alert('Maksimum ' + MAX_IMAGE_SLOTS + ' foto dibenarkan.');
+                return;
+            }
+            imageSlots.push({ url: '', caption: '', dataUrlForPdf: null });
+            renderImageSlots();
+        }
+
+        function loadPdfLibs() {
+            if (window.jsPDF || (window.jspdf && window.jspdf.jsPDF)) {
+                if (window.jspdf && window.jspdf.jsPDF) window.jsPDF = window.jspdf.jsPDF;
+                return Promise.resolve();
+            }
+            return new Promise(function(resolve, reject) {
+                var s1 = document.createElement('script');
+                s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                s1.onload = function() {
+                    var s2 = document.createElement('script');
+                    s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js';
+                    s2.onload = function() {
+                        if (window.jspdf && window.jspdf.jsPDF) window.jsPDF = window.jspdf.jsPDF;
+                        resolve();
+                    };
+                    s2.onerror = function() { reject(new Error('Autotable failed to load')); };
+                    document.head.appendChild(s2);
+                };
+                s1.onerror = function() { reject(new Error('jsPDF failed to load')); };
+                document.head.appendChild(s1);
+            });
+        }
+
+        function checkDuplicateAndProceed(formData, proceedWithSave) {
+            if (!db) return proceedWithSave(null);
+            db.collection('kkpReports')
+                .where('division', '==', formData.division)
+                .where('quarter', '==', formData.quarter)
+                .limit(1)
+                .get()
+                .then(function(snap) {
+                    if (snap.empty) return proceedWithSave(null);
+                    var existingId = snap.docs[0].id;
+                    var msg = 'Laporan untuk ' + formData.division + ' - ' + formData.quarter + ' sudah wujud. Timpa laporan sedia ada atau simpan sebagai laporan baru?';
+                    var choice = confirm(msg + '\n\nKlik OK = Timpa laporan sedia ada.\nKlik Batal = Simpan sebagai laporan baru.');
+                    if (choice) proceedWithSave(existingId);
+                    else proceedWithSave('new');
+                })
+                .catch(function(err) {
+                    console.warn('Duplicate check failed:', err);
+                    proceedWithSave(null);
+                });
+        }
+
+        function doSaveReport(reportData, existingId) {
+            if (existingId) {
+                return db.collection('kkpReports').doc(existingId).set(reportData).then(function() {
+                    currentReportId = existingId;
+                });
+            }
+            return db.collection('kkpReports').add(reportData).then(function(docRef) {
+                currentReportId = docRef.id;
+                return docRef;
+            });
+        }
+
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            var submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Sedang menjana PDF...';
+            document.getElementById('retryContainer').style.display = 'none';
+            pendingReportDataForRetry = null;
+
+            var formData = collectFormData();
+            formData.imagesForPdf = [];
+            var slotElsForPdf = document.querySelectorAll('#imageSlotsContainer .image-slot');
+            imageSlots.forEach(function(slot, i) {
+                if (!slot.url && !slot.dataUrlForPdf) return;
+                var capEl = slotElsForPdf[i] ? slotElsForPdf[i].querySelector('input[type="text"]') : null;
+                formData.imagesForPdf.push({
+                    caption: capEl ? capEl.value.trim() : (slot.caption || ''),
+                    dataUrl: slot.dataUrlForPdf || slot.url
+                });
+            });
+
+            checkDuplicateAndProceed(formData, async function(existingId) {
+                if (existingId === undefined) return;
+                var mode = existingId === null ? 'add' : (existingId === 'new' ? 'add' : 'update');
+                var reportData = {
+                    division: formData.division,
+                    quarter: formData.quarter,
+                    reportDate: formData.reportDate,
+                    totalWorkers: formData.totalWorkers,
+                    totalWorkersYTD: formData.totalWorkersYTD,
+                    sickLeave: formData.sickLeave,
+                    sickLeaveYTD: formData.sickLeaveYTD,
+                    deathCases: formData.deathCases,
+                    deathCasesYTD: formData.deathCasesYTD,
+                    severeAccidents: formData.severeAccidents,
+                    severeAccidentsYTD: formData.severeAccidentsYTD,
+                    medicalCases: formData.medicalCases,
+                    medicalCasesYTD: formData.medicalCasesYTD,
+                    firstAidCases: formData.firstAidCases,
+                    firstAidCasesYTD: formData.firstAidCasesYTD,
+                    fireCases: formData.fireCases,
+                    fireCasesYTD: formData.fireCasesYTD,
+                    propertyDamage: formData.propertyDamage,
+                    propertyDamageYTD: formData.propertyDamageYTD,
+                    nearMiss: formData.nearMiss,
+                    nearMissYTD: formData.nearMissYTD,
+                    otherIncidents: formData.otherIncidents,
+                    otherIncidentsYTD: formData.otherIncidentsYTD,
+                    occupationalDisease: formData.occupationalDisease,
+                    occupationalDiseaseYTD: formData.occupationalDiseaseYTD,
+                    infectiousDisease: formData.infectiousDisease,
+                    infectiousDiseaseYTD: formData.infectiousDiseaseYTD,
+                    meetings: formData.meetings,
+                    meetingsYTD: formData.meetingsYTD,
+                    trainings: formData.trainings,
+                    trainingsYTD: formData.trainingsYTD,
+                    briefings: formData.briefings,
+                    briefingsYTD: formData.briefingsYTD,
+                    inspections: formData.inspections,
+                    inspectionsYTD: formData.inspectionsYTD,
+                    uauc: formData.uauc,
+                    uaucYTD: formData.uaucYTD,
+                    otherActivities: formData.otherActivities,
+                    otherActivitiesYTD: formData.otherActivitiesYTD,
+                    certifierName: formData.certifierName,
+                    images: formData.images,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdBy: (getAuth() && getAuth().currentUser && getAuth().currentUser.email) || localStorage.getItem('userEmail') || 'Unknown',
+                    status: 'submitted'
+                };
+                var docIdToUpdate = (existingId && existingId !== 'new') ? existingId : null;
+                try {
+                    submitBtn.innerHTML = '<span class="spinner"></span> Sedang memuatkan perpustakaan PDF...';
+                    await loadPdfLibs();
+                    submitBtn.innerHTML = '<span class="spinner"></span> Menjana dan menyimpan...';
+                    pdfData = generatePdf(formData);
+                    if (!db) throw new Error('Firebase Firestore tidak dimuat. Sila pastikan anda dalam talian dan muat semula.');
+                    await doSaveReport(reportData, docIdToUpdate);
+                    clearDraft();
+                    formIsDirty = false;
+                    document.getElementById('downloadBtn').style.display = 'block';
+                    var downloadSuccess = tryDownload(pdfData);
+                    showResultMessage(downloadSuccess, true);
+                    setTimeout(function() {
+                        var r = document.getElementById('result');
+                        if (r && r.querySelector('.success-message')) r.innerHTML = '';
+                    }, 5000);
+                } catch (error) {
+                    console.error('Error saving report:', error);
+                    pendingReportDataForRetry = { reportData: reportData, docIdToUpdate: docIdToUpdate };
+                    document.getElementById('retryContainer').style.display = 'block';
+                    showResultMessage(false, false, error);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Jana Laporan PDF';
+                }
+            });
+        }
         
-        // Function to collect all form data
         function collectFormData() {
             return {
-                // Division information
                 division: document.getElementById('division').value,
                 quarter: document.getElementById('quarter').value,
                 reportDate: document.getElementById('reportDate').value,
-                
-                // Section A: Statistics
                 totalWorkers: document.getElementById('totalWorkers').value,
                 totalWorkersYTD: document.getElementById('totalWorkersYTD').value,
                 sickLeave: document.getElementById('sickLeave').value,
                 sickLeaveYTD: document.getElementById('sickLeaveYTD').value,
-                
-                // Section B: Accident Records
                 deathCases: document.getElementById('deathCases').value,
                 deathCasesYTD: document.getElementById('deathCasesYTD').value,
                 severeAccidents: document.getElementById('severeAccidents').value,
@@ -706,8 +1051,6 @@
                 medicalCasesYTD: document.getElementById('medicalCasesYTD').value,
                 firstAidCases: document.getElementById('firstAidCases').value,
                 firstAidCasesYTD: document.getElementById('firstAidCasesYTD').value,
-                // REMOVED: occupationalDisease and occupationalDiseaseYTD from here
-                
                 fireCases: document.getElementById('fireCases').value,
                 fireCasesYTD: document.getElementById('fireCasesYTD').value,
                 propertyDamage: document.getElementById('propertyDamage').value,
@@ -716,14 +1059,10 @@
                 nearMissYTD: document.getElementById('nearMissYTD').value,
                 otherIncidents: document.getElementById('otherIncidents').value,
                 otherIncidentsYTD: document.getElementById('otherIncidentsYTD').value,
-                
-                // Section C: Health-related Cases (now includes Penyakit Pekerjaan)
                 occupationalDisease: document.getElementById('occupationalDisease').value,
                 occupationalDiseaseYTD: document.getElementById('occupationalDiseaseYTD').value,
                 infectiousDisease: document.getElementById('infectiousDisease').value,
                 infectiousDiseaseYTD: document.getElementById('infectiousDiseaseYTD').value,
-                
-                // Section D: OSH Programs
                 meetings: document.getElementById('meetings').value,
                 meetingsYTD: document.getElementById('meetingsYTD').value,
                 trainings: document.getElementById('trainings').value,
@@ -736,37 +1075,125 @@
                 uaucYTD: document.getElementById('uaucYTD').value,
                 otherActivities: document.getElementById('otherActivities').value,
                 otherActivitiesYTD: document.getElementById('otherActivitiesYTD').value,
-                
-                // Section E: Certification
-                certifierName: document.getElementById('certifierName').value
+                certifierName: document.getElementById('certifierName').value,
+                images: getImagesForSave()
             };
         }
-        
-        // Function to show result message
-        function showResultMessage(downloadSuccess, saveSuccess) {
-            if (saveSuccess && downloadSuccess) {
-                document.getElementById('result').innerHTML = `
-                    <div class="success-message">
-                        ✓ Laporan berjaya disimpan, dijana dan dimuat turun!
-                    </div>
-                `;
-            } else if (saveSuccess) {
-                document.getElementById('result').innerHTML = `
-                    <div class="success-message">
-                        ✓ Laporan berjaya disimpan dan dijana! Sila gunakan butang untuk muat turun.
-                    </div>
-                `;
-                document.getElementById('downloadFallback').style.display = 'block';
-            } else {
-                document.getElementById('result').innerHTML = `
-                    <div class="success-message" style="color: #dc3545; border-left-color: #dc3545;">
-                        ✗ Ralat berlaku. Sila cuba lagi.
-                    </div>
-                `;
-            }
+
+        function getImagesForSave() {
+            const out = [];
+            const slotEls = document.querySelectorAll('#imageSlotsContainer .image-slot');
+            imageSlots.forEach((slot, i) => {
+                if (!slot.url || slot.url.startsWith('data:')) return;
+                const capEl = slotEls[i] ? slotEls[i].querySelector('input[type="text"]') : null;
+                out.push({ url: slot.url, caption: capEl ? capEl.value.trim() : (slot.caption || '') });
+            });
+            return out;
         }
         
-        // Function to handle manual download button click
+        function showResultMessage(downloadSuccess, saveSuccess, error) {
+            var resultEl = document.getElementById('result');
+            if (saveSuccess && downloadSuccess) {
+                resultEl.innerHTML = '<div class="success-message">✓ Laporan berjaya disimpan, dijana dan dimuat turun!</div>';
+            } else if (saveSuccess) {
+                resultEl.innerHTML = '<div class="success-message">✓ Laporan berjaya disimpan dan dijana! Sila gunakan butang untuk muat turun.</div>';
+                document.getElementById('downloadFallback').style.display = 'block';
+            } else {
+                var errMsg = 'Ralat berlaku. Sila cuba lagi.';
+                if (error) {
+                    if (error.message && error.message.indexOf('Firestore') !== -1) errMsg = error.message;
+                    else if (error.code === 'permission-denied') errMsg = 'Tiada kebenaran. Sila log masuk terlebih dahulu (gunakan Laman Utama / Dashboard).';
+                    else if (error.message) errMsg = 'Ralat: ' + (error.message.length > 80 ? error.message.substring(0, 80) + '…' : error.message);
+                }
+                resultEl.innerHTML = '<div class="success-message" style="color: #dc3545; border-left-color: #dc3545;">✗ ' + errMsg + '</div>';
+            }
+        }
+
+        function saveFormDraft() {
+            try {
+                var data = collectFormData();
+                data._draftAt = new Date().toISOString();
+                data._imageSlots = imageSlots.map(function(s) { return { caption: s.caption || '', url: s.url || '' }; });
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+            } catch (e) { console.warn('Draft save failed:', e); }
+        }
+
+        function clearDraft() {
+            try {
+                localStorage.removeItem(DRAFT_KEY);
+                document.getElementById('draftBanner').style.display = 'none';
+            } catch (e) {}
+        }
+
+        function restoreDraft() {
+            try {
+                var raw = localStorage.getItem(DRAFT_KEY);
+                if (!raw) return;
+                var data = JSON.parse(raw);
+                var divisionEl = document.getElementById('division');
+                if (!divisionEl.readOnly) divisionEl.value = data.division || '';
+                document.getElementById('quarter').value = data.quarter || '';
+                document.getElementById('reportDate').value = data.reportDate || '';
+                document.getElementById('totalWorkers').value = data.totalWorkers || '';
+                document.getElementById('totalWorkersYTD').value = data.totalWorkersYTD || '';
+                document.getElementById('sickLeave').value = data.sickLeave || '';
+                document.getElementById('sickLeaveYTD').value = data.sickLeaveYTD || '';
+                document.getElementById('deathCases').value = data.deathCases || '';
+                document.getElementById('deathCasesYTD').value = data.deathCasesYTD || '';
+                document.getElementById('severeAccidents').value = data.severeAccidents || '';
+                document.getElementById('severeAccidentsYTD').value = data.severeAccidentsYTD || '';
+                document.getElementById('medicalCases').value = data.medicalCases || '';
+                document.getElementById('medicalCasesYTD').value = data.medicalCasesYTD || '';
+                document.getElementById('firstAidCases').value = data.firstAidCases || '';
+                document.getElementById('firstAidCasesYTD').value = data.firstAidCasesYTD || '';
+                document.getElementById('fireCases').value = data.fireCases || '';
+                document.getElementById('fireCasesYTD').value = data.fireCasesYTD || '';
+                document.getElementById('propertyDamage').value = data.propertyDamage || '';
+                document.getElementById('propertyDamageYTD').value = data.propertyDamageYTD || '';
+                document.getElementById('nearMiss').value = data.nearMiss || '';
+                document.getElementById('nearMissYTD').value = data.nearMissYTD || '';
+                document.getElementById('otherIncidents').value = data.otherIncidents || '';
+                document.getElementById('otherIncidentsYTD').value = data.otherIncidentsYTD || '';
+                document.getElementById('occupationalDisease').value = data.occupationalDisease || '';
+                document.getElementById('occupationalDiseaseYTD').value = data.occupationalDiseaseYTD || '';
+                document.getElementById('infectiousDisease').value = data.infectiousDisease || '';
+                document.getElementById('infectiousDiseaseYTD').value = data.infectiousDiseaseYTD || '';
+                document.getElementById('meetings').value = data.meetings || '';
+                document.getElementById('meetingsYTD').value = data.meetingsYTD || '';
+                document.getElementById('trainings').value = data.trainings || '';
+                document.getElementById('trainingsYTD').value = data.trainingsYTD || '';
+                document.getElementById('briefings').value = data.briefings || '';
+                document.getElementById('briefingsYTD').value = data.briefingsYTD || '';
+                document.getElementById('inspections').value = data.inspections || '';
+                document.getElementById('inspectionsYTD').value = data.inspectionsYTD || '';
+                document.getElementById('uauc').value = data.uauc || '';
+                document.getElementById('uaucYTD').value = data.uaucYTD || '';
+                document.getElementById('otherActivities').value = data.otherActivities || '';
+                document.getElementById('otherActivitiesYTD').value = data.otherActivitiesYTD || '';
+                document.getElementById('certifierName').value = data.certifierName || '';
+                if (data._imageSlots && data._imageSlots.length) {
+                    imageSlots = data._imageSlots.map(function(s) { return { url: s.url, caption: s.caption, dataUrlForPdf: null }; });
+                    renderImageSlots();
+                }
+                clearDraft();
+                formIsDirty = true;
+            } catch (e) { console.warn('Restore draft failed:', e); }
+        }
+
+        function setupMalayValidation() {
+            var form = document.getElementById('kkpForm');
+            var required = form.querySelectorAll('[required]');
+            required.forEach(function(el) {
+                el.setCustomValidity('');
+                el.addEventListener('invalid', function() {
+                    if (el.validity.valueMissing) el.setCustomValidity('Sila isi medan ini.');
+                    else if (el.validity.typeMismatch || el.validity.badInput) el.setCustomValidity('Sila masukkan nilai yang sah.');
+                });
+                el.addEventListener('input', function() { el.setCustomValidity(''); });
+                el.addEventListener('change', function() { el.setCustomValidity(''); });
+            });
+        }
+        
         function handleDownloadClick() {
             if (pdfData) {
                 const date = new Date().toISOString().slice(0, 10);
@@ -774,40 +1201,29 @@
             }
         }
         
-        // Function to add logo to PDF
         function addLogoToPdf(doc) {
             try {
-                // Simple text-based logo (replace with your actual logo base64 when ready)
                 doc.setFontSize(8);
                 doc.setTextColor(100, 100, 100);
-                // doc.text('LOGO BAHAGIAN', 160, 20);
                 doc.text('', 160, 20);
-                
-                // Logo base64 would be added here if available
-                // const logoBase64 = '...';
-                // doc.addImage(logoBase64, 'PNG', 175, 3, 25, 0);
-                
             } catch (error) {
                 console.log('Logo not added, continuing without it');
             }
         }
 
-        // Function to generate the PDF document
         function generatePdf(data) {
-            const doc = new jsPDF();
+            var JsPDF = window.jsPDF || (window.jspdf && window.jspdf.jsPDF);
+            if (!JsPDF) throw new Error('jsPDF not loaded');
+            var doc = new JsPDF();
             const date = new Date(data.reportDate).toLocaleDateString('ms-MY');
             let yPosition = 15;
 
-            // Add logo to top right
             addLogoToPdf(doc);
-
-            // Document Title - Reduced font size and spacing
             yPosition = addDocumentTitle(doc, yPosition);
             yPosition = addDivisionInfo(doc, data, date, yPosition);
             yPosition = addSectionA(doc, data, yPosition);
             yPosition = addSectionB(doc, data, yPosition);
             
-            // Check if we need a new page for Section C and D
             if (yPosition > 150) {
                 doc.addPage();
                 yPosition = 15;
@@ -816,7 +1232,6 @@
             yPosition = addSectionC(doc, data, yPosition);
             yPosition = addSectionD(doc, data, yPosition);
             
-            // Check if we need a new page for Section E
             if (yPosition > 180) {
                 doc.addPage();
                 yPosition = 15;
@@ -824,10 +1239,47 @@
             
             yPosition = addSectionE(doc, data, yPosition);
             
+            if (data.imagesForPdf && data.imagesForPdf.length > 0) {
+                if (yPosition > 200) {
+                    doc.addPage();
+                    yPosition = 15;
+                }
+                yPosition = addLampiranSection(doc, data.imagesForPdf, yPosition);
+            }
+            
             return doc;
         }
+
+        function addLampiranSection(doc, imagesForPdf, yPosition) {
+            doc.setFontSize(11.5);
+            doc.text('LAMPIRAN / ATTACHMENTS', 15, yPosition);
+            yPosition += 8;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 15;
+            const maxW = pageWidth - margin * 2;
+            const imgHeight = 45;
+            for (let i = 0; i < imagesForPdf.length; i++) {
+                const item = imagesForPdf[i];
+                if (!item.dataUrl) continue;
+                if (yPosition + imgHeight + 15 > doc.internal.pageSize.getHeight() - 10) {
+                    doc.addPage();
+                    yPosition = 15;
+                }
+                try {
+                    const fmt = (item.dataUrl && item.dataUrl.indexOf('image/png') !== -1) ? 'PNG' : 'JPEG';
+                    doc.setFontSize(10);
+                    doc.text(`Foto ${i + 1}${item.caption ? ': ' + item.caption : ''}`, margin, yPosition);
+                    yPosition += 5;
+                    doc.addImage(item.dataUrl, fmt, margin, yPosition, Math.min(maxW, 100), imgHeight);
+                    yPosition += imgHeight + 10;
+                } catch (e) {
+                    console.warn('Could not add image to PDF:', e);
+                    yPosition += 5;
+                }
+            }
+            return yPosition;
+        }
         
-        // Function to add document title
         function addDocumentTitle(doc, yPosition) {
             doc.setFontSize(11.5);
             doc.setTextColor(40, 40, 40);
@@ -837,97 +1289,59 @@
             yPosition += 5;
             doc.text("LAPORAN PRESTASI KESELAMATAN & KESIHATAN PEKERJAAN (KKP)", 105, yPosition, { align: 'center' });
             yPosition += 10;
-            
-            // Add separation line
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.3);
             doc.line(15, yPosition, 195, yPosition);
             yPosition += 12;
-            
             return yPosition;
         }
         
-        // Function to add division information
         function addDivisionInfo(doc, data, date, yPosition) {
             doc.setFontSize(11.5);
             doc.setTextColor(0, 0, 0);
             doc.text("MAKLUMAT BAHAGIAN/ZON/UNIT", 15, yPosition);
             yPosition += 6;
-            
-            // Create table for MAKLUMAT BAHAGIAN/ZON/UNIT
             const infoData = [
                 ["Bahagian/Zon/Unit", data.division],
                 ["Suku Pelaporan", data.quarter],
                 ["Tarikh Laporan", date]
             ];
-            
             doc.autoTable({
                 startY: yPosition,
                 body: infoData,
                 theme: 'grid',
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 2,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 6
-                },
+                styles: { fontSize: 10, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, minCellHeight: 6 },
                 margin: { left: 15, right: 15 },
                 tableWidth: 'auto'
             });
-            
             return doc.lastAutoTable.finalY + 8;
         }
         
-        // Function to add Section A with uniform table styling
         function addSectionA(doc, data, yPosition) {
             doc.setFontSize(11.5);
             doc.text("SEKSYEN A : STATISTIK", 15, yPosition);
             yPosition += 6;
-            
-            // Create table for Section A
             const sectionA = [
                 ["1. Jumlah Bilangan Pekerja", data.totalWorkers, data.totalWorkersYTD],
                 ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD]
             ];
-            
             doc.autoTable({
                 startY: yPosition,
                 head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
                 body: sectionA,
                 theme: 'grid',
-                headStyles: {
-                    fillColor: [74, 108, 247],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10,
-                    halign: 'center'
-                },
-                columnStyles: {
-                    0: { cellWidth: 'auto', halign: 'left' },
-                    1: { cellWidth: 25, halign: 'center' },
-                    2: { cellWidth: 35, halign: 'center' }
-                },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 3,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 7
-                },
+                headStyles: { fillColor: [74, 108, 247], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10, halign: 'center' },
+                columnStyles: { 0: { cellWidth: 'auto', halign: 'left' }, 1: { cellWidth: 25, halign: 'center' }, 2: { cellWidth: 35, halign: 'center' } },
+                styles: { fontSize: 10, cellPadding: 3, lineColor: [0, 0, 0], lineWidth: 0.2, minCellHeight: 7 },
                 margin: { left: 15, right: 15 }
             });
-            
             return doc.lastAutoTable.finalY + 8;
         }
 
-        // Function to add Section B with uniform table styling (Penyakit Pekerjaan removed)
         function addSectionB(doc, data, yPosition) {
             doc.setFontSize(11.5);
             doc.text("SEKSYEN B : REKOD KES KEMALANGAN", 15, yPosition);
             yPosition += 6;
-            
-            // Create table for Section B with updated structure (Penyakit Pekerjaan removed)
             const sectionB = [
                 ["1. Kes Kemalangan Major (Cuti Sakit >= 5 Hari)", "", ""],
                 ["1.1 Kes Kematian", data.deathCases, data.deathCasesYTD],
@@ -941,34 +1355,16 @@
                 ["3.3 Kejadian Hampir (Near Miss)", data.nearMiss, data.nearMissYTD],
                 ["3.4 Lain-lain insiden", data.otherIncidents, data.otherIncidentsYTD]
             ];
-            
             doc.autoTable({
                 startY: yPosition,
                 head: [['PERKARA', 'BILANGAN KES', 'BILANGAN KES TAHUN INI']],
                 body: sectionB,
                 theme: 'grid',
-                headStyles: {
-                    fillColor: [74, 108, 247],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10,
-                    halign: 'center'
-                },
-                columnStyles: {
-                    0: { cellWidth: 'auto', halign: 'left' },
-                    1: { cellWidth: 25, halign: 'center' },
-                    2: { cellWidth: 35, halign: 'center' }
-                },
-                styles: {
-                    fontSize: 9.5,
-                    cellPadding: 3,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 7
-                },
+                headStyles: { fillColor: [74, 108, 247], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10, halign: 'center' },
+                columnStyles: { 0: { cellWidth: 'auto', halign: 'left' }, 1: { cellWidth: 25, halign: 'center' }, 2: { cellWidth: 35, halign: 'center' } },
+                styles: { fontSize: 9.5, cellPadding: 3, lineColor: [0, 0, 0], lineWidth: 0.2, minCellHeight: 7 },
                 margin: { left: 15, right: 15 },
                 didParseCell: function(data) {
-                    // Style for section headers
                     if (data.cell.raw === "" && (data.row.index === 0 || data.row.index === 3 || data.row.index === 6)) {
                         data.cell.styles.fillColor = [240, 240, 240];
                         data.cell.styles.fontStyle = 'bold';
@@ -976,59 +1372,34 @@
                     }
                 }
             });
-            
             return doc.lastAutoTable.finalY + 8;
         }
 
-        // Function to add Section C with uniform table styling (now includes Penyakit Pekerjaan)
         function addSectionC(doc, data, yPosition) {
             doc.setFontSize(11.5);
             doc.text("SEKSYEN C : REKOD KES BERKAITAN KESIHATAN", 15, yPosition);
             yPosition += 6;
-            
-            // Create table for Section C (now with both items)
             const sectionC = [
                 ["1. Kes Penyakit Pekerjaan", data.occupationalDisease, data.occupationalDiseaseYTD],
                 ["2. Kes Penyakit Berjangkit", data.infectiousDisease, data.infectiousDiseaseYTD]
             ];
-            
             doc.autoTable({
                 startY: yPosition,
                 head: [['PERKARA', 'BILANGAN KES', 'BILANGAN KES TAHUN INI']],
                 body: sectionC,
                 theme: 'grid',
-                headStyles: {
-                    fillColor: [74, 108, 247],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10,
-                    halign: 'center'
-                },
-                columnStyles: {
-                    0: { cellWidth: 'auto', halign: 'left' },
-                    1: { cellWidth: 25, halign: 'center' },
-                    2: { cellWidth: 35, halign: 'center' }
-                },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 3,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 7
-                },
+                headStyles: { fillColor: [74, 108, 247], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10, halign: 'center' },
+                columnStyles: { 0: { cellWidth: 'auto', halign: 'left' }, 1: { cellWidth: 25, halign: 'center' }, 2: { cellWidth: 35, halign: 'center' } },
+                styles: { fontSize: 10, cellPadding: 3, lineColor: [0, 0, 0], lineWidth: 0.2, minCellHeight: 7 },
                 margin: { left: 15, right: 15 }
             });
-            
             return doc.lastAutoTable.finalY + 8;
         }
 
-        // Function to add Section D with uniform table styling
         function addSectionD(doc, data, yPosition) {
             doc.setFontSize(11.5);
             doc.text("SEKSYEN D : PROGRAM KKP", 15, yPosition);
             yPosition += 6;
-            
-            // Create table for Section D
             const sectionD = [
                 ["1. Jumlah Mesyuarat KKP", data.meetings, data.meetingsYTD],
                 ["2. Jumlah Latihan KKP", data.trainings, data.trainingsYTD],
@@ -1037,57 +1408,32 @@
                 ["5. Pelaporan Unsafe Act Unsafe Condition (UAUC)", data.uauc, data.uaucYTD],
                 ["6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP)", data.otherActivities, data.otherActivitiesYTD]
             ];
-            
             doc.autoTable({
                 startY: yPosition,
                 head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
                 body: sectionD,
                 theme: 'grid',
-                headStyles: {
-                    fillColor: [74, 108, 247],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10,
-                    halign: 'center'
-                },
-                columnStyles: {
-                    0: { cellWidth: 'auto', halign: 'left' },
-                    1: { cellWidth: 25, halign: 'center' },
-                    2: { cellWidth: 35, halign: 'center' }
-                },
-                styles: {
-                    fontSize: 9.5,
-                    cellPadding: 3,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 7
-                },
+                headStyles: { fillColor: [74, 108, 247], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10, halign: 'center' },
+                columnStyles: { 0: { cellWidth: 'auto', halign: 'left' }, 1: { cellWidth: 25, halign: 'center' }, 2: { cellWidth: 35, halign: 'center' } },
+                styles: { fontSize: 9.5, cellPadding: 3, lineColor: [0, 0, 0], lineWidth: 0.2, minCellHeight: 7 },
                 margin: { left: 15, right: 15 }
             });
-            
             return doc.lastAutoTable.finalY + 8;
         }
         
-        // Function to add Section E (Certification)
         function addSectionE(doc, data, yPosition) {
             doc.setFontSize(11.5);
             doc.text("SEKSYEN E : PERAKUAN", 15, yPosition);
             yPosition += 10;
-            
-            // Add certification statement
             doc.setFontSize(10);
             doc.text("Saya dengan ini memperakui bahawa maklumat yang diberikan dalam laporan ini adalah benar dan tepat.", 20, yPosition);
             yPosition += 5;
-            
-            // Add certifier name only
             doc.text("Nama Pegawai yang Melengkapkan:", 20, yPosition);
             doc.text(data.certifierName, 79, yPosition);
             yPosition += 15;
-            
             return yPosition;
         }
         
-        // Function to try downloading the PDF
         function tryDownload(pdfData) {
             try {
                 const date = new Date().toISOString().slice(0, 10);
@@ -1099,44 +1445,87 @@
             }
         }
         
-        // Function to handle guide viewing
         function handleGuideView() {
-            // Open the PDF guide in a new tab
-            const guideUrl = 'Panduan_Laporan_KKP.pdf';
-            window.open(guideUrl, '_blank');
+            window.open('Panduan_Laporan_KKP.pdf', '_blank');
         }
         
-        // Function to handle guide downloading
         function handleGuideDownload() {
-            // Create a temporary link to download the PDF guide
-            const guideUrl = 'Panduan_Laporan_KKP.pdf';
-            const downloadLink = document.getElementById('guideDownloadLink');
-            downloadLink.href = guideUrl;
+            var downloadLink = document.getElementById('guideDownloadLink');
+            downloadLink.href = 'Panduan_Laporan_KKP.pdf';
             downloadLink.download = 'Panduan_Laporan_KKP.pdf';
             downloadLink.click();
         }
         
-        // Set default date values
         function setDefaultDates() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('reportDate').value = today;
         }
         
-        // Initialize the form
         function initializeForm() {
-            // Set default dates
+            db = getDb();
+            getUserRoleAndDivision(function(err, info) {
+                if (!err && info && info.division) {
+                    var divisionEl = document.getElementById('division');
+                    if (divisionEl) {
+                        divisionEl.value = info.division;
+                        divisionEl.readOnly = true;
+                        divisionEl.title = 'Bahagian anda telah ditetapkan oleh sistem.';
+                    }
+                }
+            });
+            initImageSlots();
             setDefaultDates();
-            
-            // Add event listeners
-            document.getElementById('kkpForm').addEventListener('submit', handleFormSubmit);
-            document.getElementById('downloadBtn').addEventListener('click', handleDownloadClick);
-            document.getElementById('viewGuideBtn').addEventListener('click', handleGuideView);
-            document.getElementById('downloadGuideBtn').addEventListener('click', handleGuideDownload);
+            setupMalayValidation();
+            var form = document.getElementById('kkpForm');
+            var downloadBtn = document.getElementById('downloadBtn');
+            var viewGuideBtn = document.getElementById('viewGuideBtn');
+            var downloadGuideBtn = document.getElementById('downloadGuideBtn');
+            if (form) form.addEventListener('submit', handleFormSubmit);
+            if (downloadBtn) downloadBtn.addEventListener('click', handleDownloadClick);
+            if (viewGuideBtn) viewGuideBtn.addEventListener('click', handleGuideView);
+            if (downloadGuideBtn) downloadGuideBtn.addEventListener('click', handleGuideDownload);
+            form.querySelectorAll('input, select, textarea').forEach(function(el) {
+                el.addEventListener('input', function() { formIsDirty = true; });
+                el.addEventListener('change', function() { formIsDirty = true; });
+            });
+            draftSaveTimer = setInterval(saveFormDraft, DRAFT_SAVE_INTERVAL_MS);
+            window.addEventListener('beforeunload', function(e) {
+                if (formIsDirty) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+            if (localStorage.getItem(DRAFT_KEY)) {
+                document.getElementById('draftBanner').style.display = 'block';
+            }
+            document.getElementById('draftContinueBtn').addEventListener('click', function() {
+                restoreDraft();
+                document.getElementById('draftBanner').style.display = 'none';
+            });
+            document.getElementById('draftDiscardBtn').addEventListener('click', function() {
+                clearDraft();
+                formIsDirty = false;
+            });
+            document.getElementById('retrySaveBtn').addEventListener('click', function() {
+                if (!pendingReportDataForRetry || !db) return;
+                var payload = pendingReportDataForRetry;
+                pendingReportDataForRetry = null;
+                document.getElementById('retryContainer').style.display = 'none';
+                doSaveReport(payload.reportData, payload.docIdToUpdate).then(function() {
+                    showResultMessage(true, true);
+                }).catch(function(err) {
+                    pendingReportDataForRetry = payload;
+                    document.getElementById('retryContainer').style.display = 'block';
+                    showResultMessage(false, false, err);
+                });
+            });
         }
-        
-        // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initializeForm);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            requireAuth(function() {
+                initializeForm();
+            });
+        });
     </script>
 </body>
 </html>
-

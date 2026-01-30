@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ms">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LPKKP Login</title>
+    <title>LPKKP - Log Masuk</title>
+    <link rel="stylesheet" href="common.css">
     <style>
         * {
             box-sizing: border-box;
@@ -11,7 +12,7 @@
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         body {
             background: linear-gradient(135deg, #6e8efb, #a777e3);
             min-height: 100vh;
@@ -20,7 +21,7 @@
             align-items: center;
             padding: 20px;
         }
-        
+
         .container {
             width: 100%;
             max-width: 500px;
@@ -29,34 +30,34 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             overflow: hidden;
         }
-        
+
         .header {
             background: #4a6cf7;
             color: white;
             padding: 25px;
             text-align: center;
         }
-        
+
         .header h1 {
             font-size: 24px;
             font-weight: 600;
         }
-        
+
         .form-container {
             padding: 30px;
         }
-        
+
         .input-group {
             margin-bottom: 20px;
         }
-        
+
         .input-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
             color: #333;
         }
-        
+
         .input-group input {
             width: 100%;
             padding: 12px 15px;
@@ -65,12 +66,12 @@
             font-size: 16px;
             transition: border 0.3s;
         }
-        
+
         .input-group input:focus {
             border-color: #4a6cf7;
             outline: none;
         }
-        
+
         .btn {
             background: #4a6cf7;
             color: white;
@@ -83,11 +84,11 @@
             cursor: pointer;
             transition: background 0.3s;
         }
-        
+
         .btn:hover {
             background: #3a5cd8;
         }
-        
+
         .message {
             text-align: center;
             margin-top: 20px;
@@ -95,55 +96,24 @@
             font-weight: 500;
             min-height: 24px;
         }
-        
+
         .success-message {
             color: #28a745;
         }
-        
+
         .info {
             text-align: center;
-            margin-top: 30px;
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .info a {
-            color: #4a6cf7;
-            text-decoration: none;
-        }
-        
-        .redirect-info {
-            text-align: center;
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            border-left: 4px solid #4a6cf7;
-        }
-        
-        .debug-info {
             margin-top: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            font-size: 14px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .info strong {
             color: #333;
         }
-        
-        .debug-toggle {
-            text-align: center;
-            margin-top: 15px;
-        }
-        
-        .debug-toggle button {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-size: 14px;
-            cursor: pointer;
-        }
+
+        .debug-toggle { display: none; }
+        .debug-info { display: none; }
     </style>
 </head>
 <body>
@@ -153,8 +123,8 @@
         </div>
         <div class="form-container">
             <div class="input-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" placeholder="Enter your email" value="">
+                <label for="email">Email or Division (Bahagian/Zon/Unit)</label>
+                <input type="text" id="email" placeholder="Enter email or division" value="" autocomplete="username">
             </div>
             <div class="input-group">
                 <label for="password">Password</label>
@@ -162,12 +132,14 @@
             </div>
             <button class="btn" id="loginBtn">Login</button>
             <div class="message" id="loginMessage"></div>
-            
-            <!-- Debug button is hidden -->
+
+            <div class="info">
+                <strong>First time?</strong> <a href="register.html" style="color:#4a6cf7;font-weight:600;text-decoration:none;">Sign up</a> with email, password, and division. You can log in with either email or division + password.
+            </div>
+
             <div class="debug-toggle">
                 <button id="toggleDebug" style="display: none;">Show Debug Info</button>
             </div>
-            
             <div class="debug-info" id="debugInfo" style="display: none;">
                 <h3>Debug Information</h3>
                 <p><strong>Firebase Status:</strong> <span id="firebaseStatus">Checking...</span></p>
@@ -175,25 +147,15 @@
                 <p><strong>User Data:</strong> <span id="userData">No data retrieved</span></p>
                 <p><strong>LocalStorage:</strong> <span id="localStorageStatus">Not set</span></p>
             </div>
-            
-            <!-- <div class="redirect-info">
-                <p>After successful login, you will be redirected to index.html</p>
-            </div> -->
-            
-            <!-- <div class="info">
-                <p>Demo credentials: admin@example.com / password123</p>
-                <p>This is a demo system using Firebase Firestore</p>
-            </div> -->
         </div>
     </div>
 
-    <!-- Firebase App Setup -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
+    <script src="config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="common.js"></script>
     <script>
-        // DOM elements
-        const loginPage = document.getElementById('loginPage');
         const loginBtn = document.getElementById('loginBtn');
         const loginMessage = document.getElementById('loginMessage');
         const toggleDebugBtn = document.getElementById('toggleDebug');
@@ -203,134 +165,141 @@
         const userData = document.getElementById('userData');
         const localStorageStatus = document.getElementById('localStorageStatus');
 
-        // Toggle debug info
-        toggleDebugBtn.addEventListener('click', () => {
-            if (debugInfo.style.display === 'none') {
-                debugInfo.style.display = 'block';
-                toggleDebugBtn.textContent = 'Hide Debug Info';
-            } else {
-                debugInfo.style.display = 'none';
-                toggleDebugBtn.textContent = 'Show Debug Info';
-            }
-        });
-
-        // Update debug info
         function updateDebugInfo(section, message) {
             switch(section) {
-                case 'firebase':
-                    firebaseStatus.textContent = message;
-                    break;
-                case 'query':
-                    queryDetails.textContent = message;
-                    break;
-                case 'user':
-                    userData.textContent = message;
-                    break;
-                case 'storage':
-                    localStorageStatus.textContent = message;
-                    break;
+                case 'firebase': firebaseStatus.textContent = message; break;
+                case 'query': queryDetails.textContent = message; break;
+                case 'user': userData.textContent = message; break;
+                case 'storage': localStorageStatus.textContent = message; break;
             }
         }
 
-        // Firebase configuration
-        const firebaseConfig = {
-          apiKey: "AIzaSyAjMn3H2FKy87-m6VDq9AuPKt5CqMBy8K4",
-          authDomain: "lpkkp-ed2c7.firebaseapp.com",
-          projectId: "lpkkp-ed2c7",
-          storageBucket: "lpkkp-ed2c7.firebasestorage.app",
-          messagingSenderId: "627472582025",
-          appId: "1:627472582025:web:09e2c7b7dc39942c4d8d58",
-          measurementId: "G-MFZTX9S6FE"
-        };
-
-        // Initialize Firebase
-        let db;
+        let auth, db;
         try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
+            auth = getAuth();
+            db = getDb();
             updateDebugInfo('firebase', 'Initialized successfully');
-            console.log('Firebase initialized successfully');
         } catch (error) {
-            updateDebugInfo('firebase', `Error: ${error.message}`);
-            console.error('Firebase initialization error:', error);
+            updateDebugInfo('firebase', 'Error: ' + (error.message || ''));
         }
 
-        // Check if user is already logged in
+        function normalizeDivision(val) {
+            return (val || '').trim().toLowerCase();
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
-            const savedEmail = localStorage.getItem('userEmail');
-            updateDebugInfo('storage', savedEmail ? `Found: ${savedEmail}` : 'No user email found');
-            
-            if (savedEmail) {
-                // If user is already logged in, redirect to index.html
-                loginMessage.textContent = 'User already logged in, redirecting...';
-                loginMessage.classList.add('success-message');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
+            const params = new URLSearchParams(window.location.search);
+            const msg = params.get('msg');
+            if (msg === 'pending') {
+                loginMessage.textContent = 'Your account is pending approval. Please wait for an admin to approve your registration.';
+                loginMessage.classList.remove('success-message');
+            } else if (msg === 'denied') {
+                loginMessage.textContent = 'Your registration was denied. Please contact an administrator.';
+                loginMessage.classList.remove('success-message');
+            } else if (msg === 'removed') {
+                loginMessage.textContent = 'Akaun anda telah dipadam. Sila hubungi pentadbir jika ini satu kesilapan.';
+                loginMessage.classList.remove('success-message');
             }
+            auth && auth.onAuthStateChanged(user => {
+                if (user) {
+                    const email = user.email || '';
+                    localStorage.setItem('userEmail', email);
+                    loginMessage.textContent = 'Signed in. Redirecting...';
+                    loginMessage.classList.add('success-message');
+                    setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+                } else {
+                    updateDebugInfo('storage', 'No authenticated user');
+                }
+            });
         });
 
-        // Login function
         loginBtn.addEventListener('click', async () => {
-            const email = document.getElementById('email').value;
+            const identifier = (document.getElementById('email').value || '').trim();
             const password = document.getElementById('password').value;
-            
-            if (!email || !password) {
-                loginMessage.textContent = 'Please enter both email and password';
+
+            if (!identifier || !password) {
+                loginMessage.textContent = 'Please enter email or division and password';
+                loginMessage.classList.remove('success-message');
                 return;
             }
-            
-            loginMessage.textContent = 'Checking credentials...';
+
+            loginMessage.textContent = 'Signing in...';
             loginMessage.classList.remove('success-message');
-            updateDebugInfo('query', `Querying for email: ${email}`);
-            
-            try {
-                // Check credentials against Firestore
-                const querySnapshot = await db.collection('users')
-                    .where('email', '==', email)
-                    .get();
-                
-                updateDebugInfo('query', `Found ${querySnapshot.size} matching documents`);
-                
-                if (querySnapshot.empty) {
-                    loginMessage.textContent = 'User not found';
-                    updateDebugInfo('user', 'No user found with this email');
+            updateDebugInfo('query', `Signing in: ${identifier}`);
+
+            let emailToUse = identifier;
+            if (!identifier.includes('@')) {
+                const divisionKey = normalizeDivision(identifier);
+                try {
+                    const snap = await db.collection('divisionLookup').doc(divisionKey).get();
+                    if (!snap.exists) {
+                        loginMessage.textContent = 'Division not found. Sign up first or use your email.';
+                        loginMessage.classList.remove('success-message');
+                        return;
+                    }
+                    emailToUse = (snap.data() || {}).email || '';
+                    if (!emailToUse) {
+                        loginMessage.textContent = 'Invalid division lookup. Try logging in with your email.';
+                        loginMessage.classList.remove('success-message');
+                        return;
+                    }
+                } catch (lookupErr) {
+                    console.error('Division lookup error:', lookupErr);
+                    loginMessage.textContent = 'Could not look up division. Try logging in with your email.';
+                    loginMessage.classList.remove('success-message');
                     return;
                 }
-                
-                let userFound = false;
-                querySnapshot.forEach((doc) => {
-                    const user = doc.data();
-                    updateDebugInfo('user', `Retrieved user: ${JSON.stringify(user)}`);
-                    
-                    if (user.password === password) {
-                        userFound = true;
-                        // Successful login
-                        loginMessage.textContent = 'Login successful! Redirecting...';
-                        loginMessage.classList.add('success-message');
-                        
-                        // Store user email in localStorage for demo purposes
-                        localStorage.setItem('userEmail', email);
-                        updateDebugInfo('storage', `Set: ${email}`);
-                        
-                        // REDIRECT TO index.html after a short delay
-                        setTimeout(() => {
-                            window.location.href = 'index.html';
-                        }, 1500);
-                    }
-                });
-                
-                if (!userFound) {
-                    loginMessage.textContent = 'Incorrect password';
-                    updateDebugInfo('user', 'Password does not match');
+            } else {
+                emailToUse = identifier.toLowerCase();
+            }
+
+            try {
+                const cred = await auth.signInWithEmailAndPassword(emailToUse, password);
+                const user = cred.user;
+                const signedEmail = (user && user.email ? user.email : emailToUse).toLowerCase();
+
+                const roleDoc = await db.collection('userRoles').doc(signedEmail).get();
+                const role = (roleDoc.data() || {}).role || 'pending';
+
+                if (role === 'pending') {
+                    await auth.signOut();
+                    loginMessage.textContent = 'Your account is pending approval. Please wait for an admin to approve your registration.';
+                    loginMessage.classList.remove('success-message');
+                    return;
                 }
+                if (role === 'denied') {
+                    await auth.signOut();
+                    loginMessage.textContent = 'Your registration was denied. Please contact an administrator.';
+                    loginMessage.classList.remove('success-message');
+                    return;
+                }
+
+                loginMessage.textContent = 'Signed in. Redirecting...';
+                loginMessage.classList.add('success-message');
+                localStorage.setItem('userEmail', signedEmail);
+                updateDebugInfo('user', 'Signed in: ' + signedEmail);
+
+                setTimeout(() => { window.location.href = 'index.html'; }, 1200);
             } catch (error) {
-                console.error('Error getting documents: ', error);
-                loginMessage.textContent = 'Login error. Please try again.';
-                updateDebugInfo('query', `Error: ${error.message}`);
+                console.error('Login error:', error);
+                if (error.code === 'auth/user-not-found') {
+                    loginMessage.textContent = 'User not found. Sign up first to create an account.';
+                } else if (error.code === 'auth/wrong-password') {
+                    loginMessage.textContent = 'Incorrect password.';
+                } else if (error.code === 'auth/invalid-email') {
+                    loginMessage.textContent = 'Invalid email format.';
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    loginMessage.textContent = 'Email/Password sign-in is disabled. Enable it in Firebase Console.';
+                } else if (error.code === 'auth/invalid-credential') {
+                    loginMessage.textContent = 'Invalid email/division or password. Sign up first if you are new.';
+                } else if (error.code === 'auth/configuration-not-found') {
+                    loginMessage.textContent = 'Firebase config mismatch. Ensure the app config matches your Firebase project.';
+                } else {
+                    loginMessage.textContent = 'Login error: ' + (error.message || 'Please try again.');
+                }
+                updateDebugInfo('query', `Error: ${error.code || ''} - ${error.message}`);
             }
         });
     </script>
 </body>
 </html>
-
