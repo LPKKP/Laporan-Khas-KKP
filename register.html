@@ -293,9 +293,13 @@
 
                 const existingDoc = await divisionRef.get();
                 if (existingDoc.exists) {
-                    registerMessage.textContent = 'This division is already registered. Use a different division or log in with your email.';
-                    registerMessage.classList.remove('success-message');
-                    return;
+                    const existingEmail = ((existingDoc.data() || {}).email || '').toLowerCase();
+                    if (existingEmail !== email) {
+                        registerMessage.textContent = 'This division is already registered. Use a different division or log in with your email.';
+                        registerMessage.classList.remove('success-message');
+                        return;
+                    }
+                    // Same email = user is re-applying for their own division (e.g. after denial). Allow to proceed.
                 }
 
                 const cred = await auth.createUserWithEmailAndPassword(email, password);
@@ -315,7 +319,52 @@
                 console.error('Registration error:', error);
                 registerMessage.classList.remove('success-message');
                 if (error.code === 'auth/email-already-in-use') {
-                    registerMessage.textContent = 'This email is already registered. Try logging in instead.';
+                    registerMessage.textContent = 'Checking if you can re-apply...';
+                    try {
+                        const signInCred = await auth.signInWithEmailAndPassword(email, password);
+                        const roleSnap = await db.collection('userRoles').doc(email).get();
+                        const currentRole = (roleSnap.exists ? roleSnap.data() : {}).role || '';
+                        const canReapply = currentRole === 'denied' || !roleSnap.exists;
+                        if (canReapply) {
+                            const divisionKey = normalizeDivision(division);
+                            const newDivLookup = await db.collection('divisionLookup').doc(divisionKey).get();
+                            const lookupEmail = ((newDivLookup.data() || {}).email || '').toLowerCase();
+                            if (newDivLookup.exists && lookupEmail !== email) {
+                                await auth.signOut();
+                                registerMessage.textContent = 'This division is already registered by another user. Choose a different division.';
+                                return;
+                            }
+                            const oldDivision = (roleSnap.data() || {}).division || '';
+                            const oldKey = normalizeDivision(oldDivision);
+                            if (oldKey && oldKey !== divisionKey) {
+                                const oldLookup = await db.collection('divisionLookup').doc(oldKey).get();
+                                if (oldLookup.exists && (oldLookup.data() || {}).email === email) {
+                                    await db.collection('divisionLookup').doc(oldKey).delete();
+                                }
+                            }
+                            await db.collection('divisionLookup').doc(divisionKey).set({ email: email });
+                            await db.collection('userRoles').doc(email).set({
+                                role: 'pending',
+                                division: division,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            }, { merge: true });
+                            await auth.signOut();
+                            registerMessage.textContent = 'Pendaftaran semula berjaya. Akaun anda menunggu kelulusan admin. Sila cuba log masuk setelah admin meluluskan.';
+                            registerMessage.classList.add('success-message');
+                        } else {
+                            await auth.signOut();
+                            registerMessage.textContent = 'This email is already registered. Try logging in instead.';
+                        }
+                    } catch (reapplyErr) {
+                        console.error('Re-apply check error:', reapplyErr);
+                        if (reapplyErr.code === 'auth/wrong-password' || reapplyErr.code === 'auth/invalid-credential') {
+                            registerMessage.textContent = 'Your previous registration was denied. To re-apply, use the same password you used when you first registered.';
+                        } else if (reapplyErr.code === 'permission-denied') {
+                            registerMessage.textContent = 'Unable to re-apply (permission denied). Ensure Firestore rules allow denied users to re-apply, then try again.';
+                        } else {
+                            registerMessage.textContent = 'Unable to re-apply: ' + (reapplyErr.message || 'Please try again or contact an administrator.');
+                        }
+                    }
                 } else if (error.code === 'auth/invalid-email') {
                     registerMessage.textContent = 'Invalid email format.';
                 } else if (error.code === 'auth/weak-password') {

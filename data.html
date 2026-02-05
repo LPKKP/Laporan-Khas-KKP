@@ -313,6 +313,97 @@
             transform: none;
         }
         
+        .lampiran-btn {
+            background: #6f42c1;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .lampiran-btn:hover {
+            background: #5e35b1;
+            transform: translateY(-1px);
+        }
+        
+        /* Lightbox gallery (Lampiran) */
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .lightbox-overlay.open { display: flex; }
+        .lightbox-content {
+            position: relative;
+            max-width: 95vw;
+            max-height: 95vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .lightbox-content img {
+            max-width: 90vw;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .lightbox-caption {
+            color: #fff;
+            margin-top: 12px;
+            text-align: center;
+            font-size: 14px;
+            max-width: 90vw;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+            transition: background 0.2s;
+        }
+        .lightbox-close:hover { background: rgba(255,255,255,0.3); }
+        .lightbox-prev, .lightbox-next {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+            line-height: 1;
+        }
+        .lightbox-prev:hover, .lightbox-next:hover { background: rgba(255,255,255,0.35); }
+        .lightbox-prev { left: -60px; }
+        .lightbox-next { right: -60px; }
+        .lightbox-counter { color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 8px; }
+        @media (max-width: 768px) {
+            .lightbox-prev { left: 10px; }
+            .lightbox-next { right: 10px; }
+        }
+        
         /* Enhanced Filter Controls */
         .filter-controls {
             display: flex;
@@ -513,6 +604,40 @@
             color: #666;
             font-size: 16px;
         }
+        .loading .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(74, 108, 247, 0.2);
+            border-top-color: #4a6cf7;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .pdf-modal-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a2e;
+            color: #fff;
+            border-radius: 10px;
+            z-index: 10;
+        }
+        .pdf-modal-loading.hidden { display: none; }
+        .pdf-modal-loading .modal-load-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
         
         .error-message {
             text-align: center;
@@ -655,12 +780,15 @@
             
             .data-table {
                 font-size: 12px;
+                min-width: 780px;
+                display: table;
             }
             
             .data-table th, 
             .data-table td {
                 padding: 8px 10px;
                 font-size: 12px;
+                white-space: nowrap;
             }
             
             .button-container {
@@ -765,6 +893,7 @@
     <!-- External libraries for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="pdf-report.js"></script>
 
     <script src="config.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
@@ -778,7 +907,23 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <div class="modal-header" id="pdfTitle">KKP Report</div>
+            <div id="pdfModalLoading" class="pdf-modal-loading">
+                <div class="modal-load-spinner"></div>
+                <span>Menjana PDF...</span>
+            </div>
             <iframe id="pdfViewer" class="pdf-viewer" frameborder="0"></iframe>
+        </div>
+    </div>
+
+    <!-- Lampiran (Images) Lightbox -->
+    <div id="lampiranLightbox" class="lightbox-overlay" aria-hidden="true">
+        <div class="lightbox-content">
+            <button type="button" class="lightbox-close" id="lampiranLightboxClose" aria-label="Tutup">&times;</button>
+            <button type="button" class="lightbox-prev" id="lampiranLightboxPrev" aria-label="Sebelumnya">&lsaquo;</button>
+            <img id="lampiranLightboxImg" src="" alt="">
+            <button type="button" class="lightbox-next" id="lampiranLightboxNext" aria-label="Seterusnya">&rsaquo;</button>
+            <div id="lampiranLightboxCaption" class="lightbox-caption"></div>
+            <div id="lampiranLightboxCounter" class="lightbox-counter"></div>
         </div>
     </div>
 
@@ -893,7 +1038,7 @@
             </thead>
             <tbody id="tableBody">
                 <tr>
-                    <td colspan="9" class="loading">Loading reports...</td>
+                    <td colspan="9" class="loading"><span class="spinner"></span> Memuatkan laporan...</td>
                 </tr>
             </tbody>
         </table>
@@ -1075,11 +1220,6 @@
             return csvRows;
         }
 
-        // Utility function for safe data access
-        function safeGetValue(value, fallback = 'N/A') {
-            return value || value === 0 ? value : fallback;
-        }
-
         // Enhanced debounce function for search
         function debounce(func, wait, immediate) {
             let timeout;
@@ -1112,11 +1252,22 @@
                     loadDivisionFilter();
                     applyFilters();
                     updateSearchResultsInfo();
+                    openViewIfRequested();
                 })
                 .catch((error) => {
                     console.error('Error loading reports:', error);
                     tableBody.innerHTML = '<tr><td colspan="9" class="error-message">Ralat memuatkan laporan. Sila cuba lagi.</td></tr>';
                 });
+        }
+
+        function openViewIfRequested() {
+            const params = new URLSearchParams(window.location.search);
+            const viewId = params.get('view');
+            if (!viewId) return;
+            const report = allReports.find(r => r.id === viewId);
+            if (report) {
+                setTimeout(() => viewPdf(viewId), 200);
+            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -1173,7 +1324,7 @@
                     loadDivisionFilter();
                     applyFilters(); // Apply initial filters
                     updateSearchResultsInfo();
-                    
+                    openViewIfRequested();
                 }).catch((error) => {
                     console.error('Error loading reports: ', error);
                     tableBody.innerHTML = '<tr><td colspan="9" class="error-message">Error loading reports. Please try again.</td></tr>';
@@ -1413,6 +1564,22 @@
                 }
             });
             
+            const lampiranLb = document.getElementById('lampiranLightbox');
+            if (lampiranLb) {
+                document.getElementById('lampiranLightboxClose').addEventListener('click', closeLampiranLightbox);
+                document.getElementById('lampiranLightboxPrev').addEventListener('click', function() {
+                    if (!window._lampiranList || !window._lampiranList.length) return;
+                    window._lampiranCurrent = (window._lampiranCurrent - 1 + window._lampiranList.length) % window._lampiranList.length;
+                    showLampiranLightboxImage();
+                });
+                document.getElementById('lampiranLightboxNext').addEventListener('click', function() {
+                    if (!window._lampiranList || !window._lampiranList.length) return;
+                    window._lampiranCurrent = (window._lampiranCurrent + 1) % window._lampiranList.length;
+                    showLampiranLightboxImage();
+                });
+                lampiranLb.addEventListener('click', function(e) { if (e.target === lampiranLb) closeLampiranLightbox(); });
+            }
+            
             // Escape key for modals
             document.addEventListener('keydown', function(event) {
                 if (event.key === 'Escape') {
@@ -1422,6 +1589,13 @@
                     if (clearDataModal.style.display === 'block') {
                         hideClearConfirmation();
                     }
+                    if (lampiranLb && lampiranLb.classList.contains('open')) {
+                        closeLampiranLightbox();
+                    }
+                }
+                if (lampiranLb && lampiranLb.classList.contains('open')) {
+                    if (event.key === 'ArrowLeft') document.getElementById('lampiranLightboxPrev').click();
+                    if (event.key === 'ArrowRight') document.getElementById('lampiranLightboxNext').click();
                 }
             });
         }
@@ -1494,6 +1668,8 @@
         function closePdfModal() {
             pdfModal.style.display = 'none';
             pdfViewer.src = '';
+            var loadingEl = document.getElementById('pdfModalLoading');
+            if (loadingEl) loadingEl.classList.remove('hidden');
         }
 
         // Navigation functions
@@ -1743,7 +1919,10 @@
                 const noInjuryDetails = getNoInjuryAccidentDetails(report);
                 
                 const reportDate = report.reportDate ? new Date(report.reportDate).toLocaleDateString('ms-MY') : 'N/A';
-                
+                const hasImages = (report.imagesForPdf && report.imagesForPdf.length) || (report.images && report.images.length);
+                const lampiranBtnHtml = hasImages
+                    ? `<button class="lampiran-btn" data-id="${report.id}" aria-label="Lihat Lampiran">Lihat Lampiran</button>`
+                    : '';
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${globalIndex}</td>
@@ -1770,6 +1949,7 @@
                         <div class="button-container">
                             <button class="view-btn" data-id="${report.id}" aria-label="View PDF for ${report.division} ${report.quarter} report">View PDF</button>
                             <button class="download-btn" data-id="${report.id}" aria-label="Download ${report.division} ${report.quarter} report">Download</button>
+                            ${lampiranBtnHtml}
                         </div>
                     </td>
                 `;
@@ -1791,7 +1971,48 @@
                 });
             });
             
+            document.querySelectorAll('.lampiran-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const reportId = e.target.getAttribute('data-id');
+                    openLampiranLightbox(reportId);
+                });
+            });
+            
             updatePagination();
+        }
+
+        function openLampiranLightbox(reportId) {
+            const report = allReports.find(r => r.id === reportId);
+            if (!report) return;
+            let list = [];
+            if (report.imagesForPdf && report.imagesForPdf.length) {
+                list = report.imagesForPdf.map(item => ({ src: item.dataUrl || item.url, caption: item.caption || '' }));
+            } else if (report.images && report.images.length) {
+                list = report.images.map(item => ({ src: item.url || '', caption: item.caption || '' }));
+            }
+            if (list.length === 0) return;
+            window._lampiranList = list;
+            window._lampiranCurrent = 0;
+            showLampiranLightboxImage();
+            const lb = document.getElementById('lampiranLightbox');
+            lb.classList.add('open');
+            lb.setAttribute('aria-hidden', 'false');
+        }
+
+        function showLampiranLightboxImage() {
+            const list = window._lampiranList;
+            const cur = window._lampiranCurrent;
+            if (!list || !list.length) return;
+            const item = list[cur];
+            document.getElementById('lampiranLightboxImg').src = item.src;
+            document.getElementById('lampiranLightboxCaption').textContent = item.caption || '';
+            document.getElementById('lampiranLightboxCounter').textContent = (cur + 1) + ' / ' + list.length;
+        }
+
+        function closeLampiranLightbox() {
+            const lb = document.getElementById('lampiranLightbox');
+            lb.classList.remove('open');
+            lb.setAttribute('aria-hidden', 'true');
         }
 
         function updatePagination() {
@@ -1810,291 +2031,6 @@
             lastBtn.disabled = currentPage === totalPages || totalPages === 0;
         }
 
-        // Helpers to reuse PDF structure from form.html
-        function addLogoToPdf(doc) {
-            try {
-                doc.setFontSize(8);
-                doc.setTextColor(100, 100, 100);
-                doc.text('', 160, 20);
-            } catch (error) {
-                console.log('Logo not added, continuing without it');
-            }
-        }
-
-        function addDocumentTitle(doc, yPosition) {
-            doc.setFontSize(11.5);
-            doc.setTextColor(40, 40, 40);
-            doc.text("BAHAGIAN TEKNOLOGI MAKLUMAT DAN KOMUNIKASI &", 105, yPosition, { align: 'center' });
-            yPosition += 5;
-            doc.text("KESELAMATAN KESIHATAN PEKERJAAN", 105, yPosition, { align: 'center' });
-            yPosition += 5;
-            doc.text("LAPORAN PRESTASI KESELAMATAN & KESIHATAN PEKERJAAN (KKP)", 105, yPosition, { align: 'center' });
-            yPosition += 10;
-
-            doc.setDrawColor(0, 0, 0);
-            doc.setLineWidth(0.3);
-            doc.line(15, yPosition, 195, yPosition);
-            yPosition += 12;
-
-            return yPosition;
-        }
-
-        function addDivisionInfo(doc, data, date, yPosition) {
-            doc.setFontSize(11.5);
-            doc.setTextColor(0, 0, 0);
-            doc.text("MAKLUMAT BAHAGIAN/ZON/UNIT", 15, yPosition);
-            yPosition += 6;
-
-            const infoData = [
-                ["Bahagian/Zon/Unit", data.division],
-                ["Suku Pelaporan", data.quarter],
-                ["Tarikh Laporan", date]
-            ];
-
-            doc.autoTable({
-                startY: yPosition,
-                body: infoData,
-                theme: 'grid',
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 2,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 6
-                },
-                margin: { left: 15, right: 15 },
-                tableWidth: 'auto'
-            });
-
-            return doc.lastAutoTable.finalY + 8;
-        }
-
-        function addSectionA(doc, data, yPosition) {
-            doc.setFontSize(11.5);
-            doc.text("SEKSYEN A : STATISTIK", 15, yPosition);
-            yPosition += 6;
-
-            const sectionA = [
-                ["1. Jumlah Bilangan Pekerja", data.totalWorkers, data.totalWorkersYTD],
-                ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD]
-            ];
-
-            doc.autoTable({
-                startY: yPosition,
-                head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
-                body: sectionA,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [13, 59, 44],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10,
-                    halign: 'center'
-                },
-                columnStyles: {
-                    0: { cellWidth: 'auto', halign: 'left' },
-                    1: { cellWidth: 25, halign: 'center' },
-                    2: { cellWidth: 35, halign: 'center' }
-                },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 3,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 7
-                },
-                margin: { left: 15, right: 15 }
-            });
-
-            return doc.lastAutoTable.finalY + 8;
-        }
-
-        function addSectionB(doc, data, yPosition) {
-            doc.setFontSize(11.5);
-            doc.text("SEKSYEN B : REKOD KES KEMALANGAN", 15, yPosition);
-            yPosition += 6;
-
-            const sectionB = [
-                ["1. Kes Kemalangan Major (Cuti Sakit >= 5 Hari)", "", ""],
-                ["1.1 Kes Kematian", data.deathCases, data.deathCasesYTD],
-                ["1.2 Kes Kemalangan Parah (Cuti Sakit >= 5 Hari)", data.severeAccidents, data.severeAccidentsYTD],
-                ["2. Kes Kemalangan Minor (Cuti Sakit < 5 Hari)", "", ""],
-                ["2.1 Kes Rawatan Perubatan", data.medicalCases, data.medicalCasesYTD],
-                ["2.2 Kes Rawatan Kecil (First Aid)", data.firstAidCases, data.firstAidCasesYTD],
-                ["3. Kes Kemalangan Tiada Kecederaan", "", ""],
-                ["3.1 Kebakaran", data.fireCases, data.fireCasesYTD],
-                ["3.2 Kerosakan Harta Benda", data.propertyDamage, data.propertyDamageYTD],
-                ["3.3 Kejadian Hampir (Near Miss)", data.nearMiss, data.nearMissYTD],
-                ["3.4 Lain-lain insiden", data.otherIncidents, data.otherIncidentsYTD]
-            ];
-
-            doc.autoTable({
-                startY: yPosition,
-                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN KES TAHUN INI']],
-                body: sectionB,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [13, 59, 44],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10,
-                    halign: 'center'
-                },
-                columnStyles: {
-                    0: { cellWidth: 'auto', halign: 'left' },
-                    1: { cellWidth: 25, halign: 'center' },
-                    2: { cellWidth: 35, halign: 'center' }
-                },
-                styles: {
-                    fontSize: 9.5,
-                    cellPadding: 3,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 7
-                },
-                margin: { left: 15, right: 15 },
-                didParseCell: function(dataCell) {
-                    if (dataCell.cell.raw === "" && (dataCell.row.index === 0 || dataCell.row.index === 3 || dataCell.row.index === 6)) {
-                        dataCell.cell.styles.fillColor = [240, 240, 240];
-                        dataCell.cell.styles.fontStyle = 'bold';
-                        dataCell.cell.styles.halign = 'left';
-                    }
-                }
-            });
-
-            return doc.lastAutoTable.finalY + 8;
-        }
-
-        function addSectionC(doc, data, yPosition) {
-            doc.setFontSize(11.5);
-            doc.text("SEKSYEN C : REKOD KES BERKAITAN KESIHATAN", 15, yPosition);
-            yPosition += 6;
-
-            const sectionC = [
-                ["1. Kes Penyakit Pekerjaan", data.occupationalDisease, data.occupationalDiseaseYTD],
-                ["2. Kes Penyakit Berjangkit", data.infectiousDisease, data.infectiousDiseaseYTD]
-            ];
-
-            doc.autoTable({
-                startY: yPosition,
-                head: [['PERKARA', 'BILANGAN KES', 'BILANGAN KES TAHUN INI']],
-                body: sectionC,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [13, 59, 44],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10,
-                    halign: 'center'
-                },
-                columnStyles: {
-                    0: { cellWidth: 'auto', halign: 'left' },
-                    1: { cellWidth: 25, halign: 'center' },
-                    2: { cellWidth: 35, halign: 'center' }
-                },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 3,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 7
-                },
-                margin: { left: 15, right: 15 }
-            });
-
-            return doc.lastAutoTable.finalY + 8;
-        }
-
-        function addSectionD(doc, data, yPosition) {
-            doc.setFontSize(11.5);
-            doc.text("SEKSYEN D : PROGRAM KKP", 15, yPosition);
-            yPosition += 6;
-
-            const sectionD = [
-                ["1. Jumlah Mesyuarat KKP", data.meetings, data.meetingsYTD],
-                ["2. Jumlah Latihan KKP", data.trainings, data.trainingsYTD],
-                ["3. Jumlah Taklimat/Toolbox", data.briefings, data.briefingsYTD],
-                ["4. Jumlah Pemeriksaan KKP (Pemeriksaan Dalaman & Luaran)", data.inspections, data.inspectionsYTD],
-                ["5. Pelaporan Unsafe Act Unsafe Condition (UAUC)", data.uauc, data.uaucYTD],
-                ["6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP)", data.otherActivities, data.otherActivitiesYTD]
-            ];
-
-            doc.autoTable({
-                startY: yPosition,
-                head: [['PERKARA', 'BILANGAN', 'BILANGAN TAHUN INI']],
-                body: sectionD,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [13, 59, 44],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10,
-                    halign: 'center'
-                },
-                columnStyles: {
-                    0: { cellWidth: 'auto', halign: 'left' },
-                    1: { cellWidth: 25, halign: 'center' },
-                    2: { cellWidth: 35, halign: 'center' }
-                },
-                styles: {
-                    fontSize: 9.5,
-                    cellPadding: 3,
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.2,
-                    minCellHeight: 7
-                },
-                margin: { left: 15, right: 15 }
-            });
-
-            return doc.lastAutoTable.finalY + 8;
-        }
-
-        function addSectionE(doc, data, yPosition) {
-            doc.setFontSize(11.5);
-            doc.text("SEKSYEN E : PERAKUAN", 15, yPosition);
-            yPosition += 10;
-
-            doc.setFontSize(10);
-            doc.text("Saya dengan ini memperakui bahawa maklumat yang diberikan dalam laporan ini adalah benar dan tepat.", 20, yPosition);
-            yPosition += 5;
-
-            doc.text("Nama Pegawai yang Melengkapkan:", 20, yPosition);
-            doc.text(data.certifierName || '', 79, yPosition);
-            yPosition += 15;
-
-            return yPosition;
-        }
-
-        function generatePdfFromReport(report) {
-            const doc = new jsPDF();
-            const dateStr = report.reportDate
-                ? new Date(report.reportDate).toLocaleDateString('ms-MY')
-                : '';
-            let yPosition = 15;
-
-            addLogoToPdf(doc);
-            yPosition = addDocumentTitle(doc, yPosition);
-            yPosition = addDivisionInfo(doc, report, dateStr, yPosition);
-            yPosition = addSectionA(doc, report, yPosition);
-            yPosition = addSectionB(doc, report, yPosition);
-
-            if (yPosition > 150) {
-                doc.addPage();
-                yPosition = 15;
-            }
-
-            yPosition = addSectionC(doc, report, yPosition);
-            yPosition = addSectionD(doc, report, yPosition);
-
-            if (yPosition > 180) {
-                doc.addPage();
-                yPosition = 15;
-            }
-
-            yPosition = addSectionE(doc, report, yPosition);
-            return doc;
-        }
-
         // View PDF in modal (regenerated on demand)
         function viewPdf(reportId) {
             const report = allReports.find(r => r.id === reportId);
@@ -2102,13 +2038,20 @@
                 alert('Report data not found');
                 return;
             }
-
-            const doc = generatePdfFromReport(report);
-            const pdfBase64 = doc.output('datauristring');
-
+            const loadingEl = document.getElementById('pdfModalLoading');
             pdfTitle.textContent = `KKP Report - ${safeGetValue(report.division)} - ${safeGetValue(report.quarter)}`;
-            pdfViewer.src = pdfBase64;
+            pdfViewer.src = '';
+            if (loadingEl) loadingEl.classList.remove('hidden');
             pdfModal.style.display = 'block';
+            try {
+                const doc = generatePdfFromReport(report);
+                const pdfBase64 = doc.output('datauristring');
+                pdfViewer.src = pdfBase64;
+            } catch (err) {
+                console.error('View PDF error:', err);
+                alert('Gagal menjana PDF. Sila cuba lagi.');
+            }
+            if (loadingEl) loadingEl.classList.add('hidden');
         }
 
         // Download regenerated PDF matching current saved data

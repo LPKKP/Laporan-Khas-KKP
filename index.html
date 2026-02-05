@@ -102,6 +102,10 @@
             transform: translateY(-5px);
         }
 
+        .stat-card-clickable {
+            cursor: pointer;
+        }
+
         .stat-card h3 {
             color: #4a6cf7;
             margin-bottom: 10px;
@@ -111,6 +115,18 @@
             font-size: 32px;
             font-weight: bold;
             color: #333;
+        }
+
+        .stat-number.loading {
+            font-size: 20px;
+            color: #999;
+        }
+
+        .activity-empty {
+            color: #888;
+            font-size: 14px;
+            padding: 15px 0;
+            text-align: center;
         }
 
         .dashboard-actions {
@@ -218,14 +234,288 @@
         }
 
         .activity-content p {
-            margin-bottom: 5px;
+            margin-bottom: 0;
             color: #333;
+        }
+
+        .activity-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 5px;
         }
 
         .activity-time {
             color: #888;
             font-size: 14px;
         }
+
+        .activity-view-btn {
+            flex-shrink: 0;
+            padding: 6px 12px;
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .activity-view-btn:hover {
+            background: #3a5cd8;
+        }
+
+        .action-btn-wrap {
+            position: relative;
+            display: inline-block;
+        }
+        .admin-pending-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            background: #dc3545;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 700;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .admin-pending-badge.visible {
+            display: flex;
+        }
+
+        .quarter-summary-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .quarter-summary-content {
+            background: #fff;
+            margin: 5% auto;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .quarter-summary-content h3 {
+            color: #4a6cf7;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .quarter-summary-section {
+            margin-bottom: 20px;
+        }
+        .quarter-summary-section h4 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .quarter-summary-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .quarter-summary-list li {
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .quarter-summary-list.submitted li { border-left: 4px solid #28a745; }
+        .quarter-summary-list.not-submitted li { border-left: 4px solid #dc3545; }
+        .quarter-summary-empty { color: #888; font-size: 14px; font-style: italic; }
+        .quarter-summary-close {
+            display: block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #4a6cf7;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .quarter-summary-close:hover { background: #3a5cd8; }
+
+        .activity-lampiran-btn {
+            flex-shrink: 0;
+            padding: 6px 12px;
+            background: #6f42c1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .activity-lampiran-btn:hover { background: #5e35b1; }
+
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .lightbox-overlay.open { display: flex; }
+        .lightbox-content {
+            position: relative;
+            max-width: 95vw;
+            max-height: 95vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .lightbox-content img {
+            max-width: 90vw;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .lightbox-caption { color: #fff; margin-top: 12px; text-align: center; font-size: 14px; max-width: 90vw; }
+        .lightbox-close {
+            position: absolute; top: -40px; right: 0;
+            background: rgba(255,255,255,0.2); color: #fff; border: none;
+            width: 40px; height: 40px; border-radius: 50%; font-size: 24px; cursor: pointer; line-height: 1;
+        }
+        .lightbox-close:hover { background: rgba(255,255,255,0.3); }
+        .lightbox-prev, .lightbox-next {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,0.2); color: #fff; border: none;
+            width: 48px; height: 48px; border-radius: 50%; font-size: 24px; cursor: pointer; line-height: 1;
+        }
+        .lightbox-prev { left: -60px; } .lightbox-next { right: -60px; }
+        .lightbox-prev:hover, .lightbox-next:hover { background: rgba(255,255,255,0.35); }
+        .lightbox-counter { color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 8px; }
+        @media (max-width: 768px) { .lightbox-prev { left: 10px; } .lightbox-next { right: 10px; } }
+
+        .pdf-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.9);
+        }
+        .pdf-modal-content {
+            position: relative;
+            background: #fefefe;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 10px;
+            width: 90%;
+            height: 90vh;
+            max-width: 1200px;
+        }
+        .pdf-modal .close {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+            background: rgba(0,0,0,0.5);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .pdf-modal .close:hover { background: rgba(0,0,0,0.7); }
+        .pdf-modal-header {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            z-index: 1001;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        .pdf-modal-viewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 10px;
+        }
+        .pdf-modal-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a2e;
+            color: #fff;
+            border-radius: 10px;
+            z-index: 10;
+        }
+        .pdf-modal-loading.hidden { display: none; }
+        .pdf-modal-loading .auth-loading-spinner { margin-bottom: 12px; }
+
+        .auth-loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.25s ease;
+        }
+        .auth-loading-overlay.hidden {
+            pointer-events: none;
+            opacity: 0;
+        }
+        .auth-loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+        .auth-loading-text {
+            color: rgba(255,255,255,0.95);
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .dashboard-content.hidden { display: none; }
+        .skeleton-stat { height: 32px; width: 48px; margin: 0 auto 8px; background: linear-gradient(90deg, #e8e8e8 25%, #f0f0f0 50%, #e8e8e8 75%); background-size: 200% 100%; animation: skeleton-shine 1.2s ease-in-out infinite; border-radius: 4px; }
+        .skeleton-activity { height: 56px; margin-bottom: 12px; background: linear-gradient(90deg, #e8e8e8 25%, #f0f0f0 50%, #e8e8e8 75%); background-size: 200% 100%; animation: skeleton-shine 1.2s ease-in-out infinite; border-radius: 8px; }
+        @keyframes skeleton-shine { to { background-position: 200% 0; } }
 
         @media (max-width: 768px) {
             .header {
@@ -245,8 +535,17 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     <script src="common.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="pdf-report.js"></script>
 </head>
 <body>
+    <div id="authLoadingOverlay" class="auth-loading-overlay" aria-live="polite">
+        <div class="auth-loading-spinner" aria-hidden="true"></div>
+        <span class="auth-loading-text">Memuatkan...</span>
+    </div>
+
+    <div class="dashboard-content hidden" id="dashboardContent">
     <div class="header">
         <h1>Dashboard - Laporan KKP</h1>
         <button class="logout-btn" id="logoutBtn">Log Keluar</button>
@@ -261,16 +560,16 @@
 
         <div class="stats-cards admin-only" id="statsCards">
             <div class="stat-card">
-                <h3>Total Users</h3>
-                <div class="stat-number">128</div>
+                <h3>Jumlah Pengguna</h3>
+                <div class="stat-number loading" id="statUsers">—</div>
             </div>
             <div class="stat-card">
-                <h3>Forms Submitted</h3>
-                <div class="stat-number">42</div>
+                <h3>Jumlah Laporan</h3>
+                <div class="stat-number loading" id="statReports">—</div>
             </div>
-            <div class="stat-card">
-                <h3>Active Sessions</h3>
-                <div class="stat-number">5</div>
+            <div class="stat-card stat-card-clickable" id="statThisQuarterCard" role="button" tabindex="0" aria-label="Klik untuk lihat ringkasan laporan suku ini">
+                <h3>Laporan Suku Ini</h3>
+                <div class="stat-number loading" id="statThisQuarter">—</div>
             </div>
         </div>
 
@@ -288,33 +587,60 @@
             <div class="action-card admin-only" id="adminPanelCard">
                 <h3>Panel Admin</h3>
                 <p>Urus peranan pengguna (admin sahaja)</p>
-                <a href="admin.html" class="action-btn">Admin</a>
+                <span class="action-btn-wrap">
+                    <a href="admin.html" class="action-btn">Admin</a>
+                    <span id="adminPendingBadge" class="admin-pending-badge" aria-label="Pending registrations">0</span>
+                </span>
             </div>
         </div>
 
-        <div class="recent-activity admin-only" id="recentActivity">
-            <h3>Recent Activity</h3>
-            <div class="activity-item">
-                <div class="activity-icon">J</div>
-                <div class="activity-content">
-                    <p>John Doe submitted a form</p>
-                    <div class="activity-time">2 hours ago</div>
-                </div>
+        <div class="recent-activity" id="recentActivity">
+            <h3 id="recentActivityTitle">Aktiviti Terkini</h3>
+            <div id="recentActivityList">
+                <div class="skeleton-activity"></div>
+                <div class="skeleton-activity"></div>
+                <div class="skeleton-activity"></div>
+                <div class="skeleton-activity"></div>
             </div>
-            <div class="activity-item">
-                <div class="activity-icon">A</div>
-                <div class="activity-content">
-                    <p>Alice Johnson updated her profile</p>
-                    <div class="activity-time">5 hours ago</div>
-                </div>
+        </div>
+    </div>
+    </div>
+
+    <div id="quarterSummaryModal" class="quarter-summary-modal" aria-hidden="true">
+        <div class="quarter-summary-content">
+            <h3 id="quarterSummaryTitle">Laporan Suku Ini</h3>
+            <div class="quarter-summary-section">
+                <h4>Telah Hantar</h4>
+                <ul id="quarterSummarySubmitted" class="quarter-summary-list submitted"></ul>
             </div>
-            <div class="activity-item">
-                <div class="activity-icon">M</div>
-                <div class="activity-content">
-                    <p>Michael Smith registered a new account</p>
-                    <div class="activity-time">Yesterday</div>
-                </div>
+            <div class="quarter-summary-section">
+                <h4>Belum Hantar</h4>
+                <ul id="quarterSummaryNotSubmitted" class="quarter-summary-list not-submitted"></ul>
             </div>
+            <button type="button" class="quarter-summary-close" id="quarterSummaryClose">Tutup</button>
+        </div>
+    </div>
+
+    <div id="pdfModal" class="pdf-modal">
+        <div class="pdf-modal-content">
+            <span class="close" id="pdfModalClose">&times;</span>
+            <div class="pdf-modal-header" id="pdfModalTitle">KKP Report</div>
+            <div id="pdfModalLoading" class="pdf-modal-loading">
+                <div class="auth-loading-spinner"></div>
+                <span class="auth-loading-text">Menjana PDF...</span>
+            </div>
+            <iframe id="pdfModalViewer" class="pdf-modal-viewer" frameborder="0"></iframe>
+        </div>
+    </div>
+
+    <div id="lampiranLightbox" class="lightbox-overlay" aria-hidden="true">
+        <div class="lightbox-content">
+            <button type="button" class="lightbox-close" id="lampiranLightboxClose" aria-label="Tutup">&times;</button>
+            <button type="button" class="lightbox-prev" id="lampiranLightboxPrev" aria-label="Sebelumnya">&lsaquo;</button>
+            <img id="lampiranLightboxImg" src="" alt="">
+            <button type="button" class="lightbox-next" id="lampiranLightboxNext" aria-label="Seterusnya">&rsaquo;</button>
+            <div id="lampiranLightboxCaption" class="lightbox-caption"></div>
+            <div id="lampiranLightboxCounter" class="lightbox-counter"></div>
         </div>
     </div>
 
@@ -324,6 +650,14 @@
 
         const userEmailDisplay = document.getElementById('userEmailDisplay');
         const logoutBtn = document.getElementById('logoutBtn');
+
+        var overlayEl = document.getElementById('authLoadingOverlay');
+        var contentEl = document.getElementById('dashboardContent');
+
+        function showDashboard() {
+            if (overlayEl) overlayEl.classList.add('hidden');
+            if (contentEl) contentEl.classList.remove('hidden');
+        }
 
         auth.onAuthStateChanged(async (user) => {
             if (!user) {
@@ -337,6 +671,7 @@
             userEmailDisplay.textContent = 'Log masuk sebagai: ' + email;
 
             let role = 'user';
+            let division = '';
             try {
                 const roleRef = db.collection('userRoles').doc(email);
                 const roleDoc = await roleRef.get();
@@ -345,7 +680,9 @@
                     window.location.href = 'login.html?msg=removed';
                     return;
                 }
-                role = (roleDoc.data() || {}).role || 'user';
+                var roleData = roleDoc.data() || {};
+                role = roleData.role || 'user';
+                division = (roleData.division || '').trim();
             } catch (err) {
                 console.warn('Could not ensure userRoles doc:', err);
             }
@@ -361,11 +698,380 @@
                 return;
             }
 
+            showDashboard();
             if (role === 'admin') {
                 document.getElementById('statsCards').classList.add('visible');
                 document.getElementById('viewDataCard').classList.add('visible');
                 document.getElementById('adminPanelCard').classList.add('visible');
-                document.getElementById('recentActivity').classList.add('visible');
+                loadDashboardData();
+            } else {
+                loadMyRecentActivity(email, division);
+            }
+        });
+
+        function getCurrentQuarter() {
+            var m = new Date().getMonth() + 1;
+            if (m <= 3) return 'Suku 1';
+            if (m <= 6) return 'Suku 2';
+            if (m <= 9) return 'Suku 3';
+            return 'Suku 4';
+        }
+
+        function relativeTimeMs(ts) {
+            if (!ts || !ts.toDate) return '';
+            var d = ts.toDate();
+            var now = new Date();
+            var sec = Math.floor((now - d) / 1000);
+            if (sec < 60) return 'Baru sahaja';
+            var min = Math.floor(sec / 60);
+            if (min < 60) return min + ' minit yang lalu';
+            var hr = Math.floor(min / 60);
+            if (hr < 24) return hr + ' jam yang lalu';
+            var day = Math.floor(hr / 24);
+            if (day === 1) return 'Semalam';
+            if (day < 7) return day + ' hari yang lalu';
+            return d.toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        async function loadDashboardData() {
+            var statUsersEl = document.getElementById('statUsers');
+            var statReportsEl = document.getElementById('statReports');
+            var statThisQuarterEl = document.getElementById('statThisQuarter');
+            var recentListEl = document.getElementById('recentActivityList');
+            if (!statUsersEl || !statReportsEl || !statThisQuarterEl || !recentListEl) return;
+
+            var currentQuarter = getCurrentQuarter();
+
+            function getCount(coll) {
+                return coll.get().then(function (snap) { return snap.size; });
+            }
+
+            try {
+                var userSnap = await db.collection('userRoles').get();
+                function isApprovedRole(role) {
+                    return role === 'admin' || role === 'user';
+                }
+                var userCount = 0;
+                var divSet = {};
+                var allDivisionsMap = {};
+                userSnap.docs.forEach(function (d) {
+                    var data = d.data();
+                    var role = (data.role || '').toLowerCase();
+                    if (isApprovedRole(role)) {
+                        userCount++;
+                        var div = (data.division || '').trim();
+                        if (div) {
+                            divSet[div.toLowerCase()] = true;
+                            allDivisionsMap[div.toLowerCase()] = div;
+                        }
+                    }
+                });
+                var totalDivisions = Object.keys(divSet).length;
+
+                var pendingCount = 0;
+                userSnap.docs.forEach(function (d) {
+                    if ((d.data().role || '') === 'pending') pendingCount++;
+                });
+                var badgeEl = document.getElementById('adminPendingBadge');
+                if (badgeEl) {
+                    if (pendingCount > 0) {
+                        badgeEl.textContent = pendingCount > 99 ? '99+' : pendingCount;
+                        badgeEl.classList.add('visible');
+                        badgeEl.setAttribute('aria-label', pendingCount + ' pendaftaran menunggu kelulusan');
+                    } else {
+                        badgeEl.textContent = '0';
+                        badgeEl.classList.remove('visible');
+                    }
+                }
+
+                var reportCount = (await db.collection('kkpReports').get()).size;
+                var thisQuarterSnap = await db.collection('kkpReports').where('quarter', '==', currentQuarter).get();
+                var thisQuarterDivisions = {};
+                thisQuarterSnap.docs.forEach(function (d) {
+                    var div = (d.data().division || '').trim();
+                    if (div) thisQuarterDivisions[div.toLowerCase()] = allDivisionsMap[div.toLowerCase()] || div;
+                });
+                var thisQuarterCount = Object.keys(thisQuarterDivisions).length;
+                var allDivisions = Object.values(allDivisionsMap).sort();
+                var submittedDivisions = Object.values(thisQuarterDivisions).sort();
+                var notSubmittedDivisions = allDivisions.filter(function (div) {
+                    return !thisQuarterDivisions[div.toLowerCase()];
+                });
+                window.quarterSummaryData = {
+                    quarter: currentQuarter,
+                    submitted: submittedDivisions,
+                    notSubmitted: notSubmittedDivisions
+                };
+
+                statUsersEl.textContent = userCount;
+                statReportsEl.textContent = reportCount;
+                statThisQuarterEl.textContent = thisQuarterCount + ' / ' + totalDivisions;
+                statUsersEl.classList.remove('loading');
+                statReportsEl.classList.remove('loading');
+                statThisQuarterEl.classList.remove('loading');
+            } catch (err) {
+                console.error('Dashboard stats error:', err);
+                statUsersEl.textContent = '—';
+                statReportsEl.textContent = '—';
+                statThisQuarterEl.textContent = '—';
+                statUsersEl.classList.remove('loading');
+                statReportsEl.classList.remove('loading');
+                statThisQuarterEl.classList.remove('loading');
+                window.quarterSummaryData = { quarter: getCurrentQuarter(), submitted: [], notSubmitted: [] };
+            }
+
+            try {
+                var recentSnap = await db.collection('kkpReports')
+                    .orderBy('createdAt', 'desc')
+                    .limit(8)
+                    .get();
+
+                if (recentSnap.empty) {
+                    recentListEl.innerHTML = '<div class="activity-empty">Tiada aktiviti terkini.</div>';
+                } else {
+                    recentListEl.innerHTML = recentSnap.docs.map(function (doc) {
+                        var d = doc.data();
+                        var division = d.division || '—';
+                        var quarter = d.quarter || '—';
+                        var by = (d.certifierName || '').trim() || (d.createdBy || '').split('@')[0] || 'Pengguna';
+                        var time = relativeTimeMs(d.createdAt);
+                        var initial = (division.charAt(0) || 'L').toUpperCase();
+                        return '<div class="activity-item">' +
+                            '<div class="activity-icon">' + initial + '</div>' +
+                            '<div class="activity-content">' +
+                            '<p><strong>' + division + '</strong> – ' + quarter + ' (oleh ' + by + ')</p>' +
+                            '<div class="activity-time">' + time + '</div>' +
+                            '</div></div>';
+                    }).join('');
+                }
+            } catch (recentErr) {
+                console.error('Dashboard recent activity error:', recentErr);
+                recentListEl.innerHTML = '<div class="activity-empty">Gagal memuatkan aktiviti. Sila refresh.</div>';
+            }
+        }
+
+        function getCreatedAtMillis(data) {
+            var ts = data.createdAt;
+            if (!ts) return 0;
+            if (typeof ts.toMillis === 'function') return ts.toMillis();
+            if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+            return 0;
+        }
+
+        async function loadMyRecentActivity(userEmail, userDivision) {
+            var recentListEl = document.getElementById('recentActivityList');
+            var titleEl = document.getElementById('recentActivityTitle');
+            if (!recentListEl) return;
+            if (titleEl) titleEl.textContent = 'Laporan anda terkini';
+            recentListEl.innerHTML = '<div class="activity-empty">Memuatkan…</div>';
+            try {
+                var snap;
+                if (userDivision) {
+                    snap = await db.collection('kkpReports')
+                        .where('division', '==', userDivision)
+                        .limit(100)
+                        .get();
+                } else {
+                    snap = await db.collection('kkpReports')
+                        .where('createdBy', '==', userEmail)
+                        .limit(50)
+                        .get();
+                }
+                var emailLower = (userEmail || '').toLowerCase();
+                var docs = snap.docs.filter(function (doc) {
+                    var by = (doc.data().createdBy || '').toLowerCase();
+                    return by === emailLower;
+                });
+                docs.sort(function (a, b) {
+                    var ta = getCreatedAtMillis(a.data());
+                    var tb = getCreatedAtMillis(b.data());
+                    return tb - ta;
+                });
+                docs = docs.slice(0, 8);
+                if (docs.length === 0) {
+                    recentListEl.innerHTML = '<div class="activity-empty">Anda belum menghantar sebarang laporan. Gunakan Borang Laporan untuk mula.</div>';
+                } else {
+                    window.dashboardReportsMap = window.dashboardReportsMap || {};
+                    recentListEl.innerHTML = docs.map(function (doc) {
+                        var d = doc.data();
+                        var reportId = doc.id;
+                        d.id = reportId;
+                        window.dashboardReportsMap[reportId] = d;
+                        var division = d.division || '—';
+                        var quarter = d.quarter || '—';
+                        var time = relativeTimeMs(d.createdAt);
+                        var initial = (division.charAt(0) || 'L').toUpperCase();
+                        var hasImages = (d.imagesForPdf && d.imagesForPdf.length) || (d.images && d.images.length);
+                        var lampiranBtn = hasImages ? '<button type="button" class="activity-lampiran-btn" data-report-id="' + reportId + '" aria-label="Lihat Lampiran">Lampiran</button>' : '';
+                        return '<div class="activity-item">' +
+                            '<div class="activity-icon">' + initial + '</div>' +
+                            '<div class="activity-content">' +
+                            '<div class="activity-row">' +
+                            '<p><strong>' + division + '</strong> – ' + quarter + '</p>' +
+                            '<button type="button" class="activity-view-btn" data-report-id="' + reportId + '" aria-label="View PDF">Lihat</button>' +
+                            lampiranBtn +
+                            '</div>' +
+                            '<div class="activity-time">' + time + '</div>' +
+                            '</div></div>';
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('My recent activity error:', err);
+                recentListEl.innerHTML = '<div class="activity-empty">Gagal memuatkan aktiviti. Sila refresh.</div>';
+            }
+        }
+
+        document.getElementById('recentActivityList').addEventListener('click', function (e) {
+            var lampiranBtn = e.target.closest('.activity-lampiran-btn');
+            if (lampiranBtn) {
+                var reportId = lampiranBtn.getAttribute('data-report-id');
+                if (reportId && window.dashboardReportsMap) openLampiranLightbox(reportId);
+                return;
+            }
+            var btn = e.target.closest('.activity-view-btn');
+            if (!btn) return;
+            var reportId = btn.getAttribute('data-report-id');
+            if (!reportId || !window.dashboardReportsMap) return;
+            var report = window.dashboardReportsMap[reportId];
+            if (!report) return;
+            var titleEl = document.getElementById('pdfModalTitle');
+            var viewerEl = document.getElementById('pdfModalViewer');
+            var modalEl = document.getElementById('pdfModal');
+            var loadingEl = document.getElementById('pdfModalLoading');
+            if (titleEl) titleEl.textContent = 'KKP Report - ' + (report.division || '') + ' - ' + (report.quarter || '');
+            if (viewerEl) viewerEl.src = '';
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (modalEl) modalEl.style.display = 'block';
+            try {
+                if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) window.jsPDF = window.jspdf.jsPDF;
+                var doc = typeof generatePdfFromReport === 'function' && generatePdfFromReport(report);
+                if (!doc) {
+                    if (loadingEl) loadingEl.classList.add('hidden');
+                    return;
+                }
+                var pdfBase64 = doc.output('datauristring');
+                if (viewerEl) viewerEl.src = pdfBase64;
+                if (loadingEl) loadingEl.classList.add('hidden');
+            } catch (err) {
+                console.error('View PDF error:', err);
+                if (loadingEl) loadingEl.classList.add('hidden');
+                alert('Gagal memaparkan PDF. Sila cuba lagi.');
+            }
+        });
+
+        function openLampiranLightbox(reportId) {
+            var report = window.dashboardReportsMap && window.dashboardReportsMap[reportId];
+            if (!report) return;
+            var list = [];
+            if (report.imagesForPdf && report.imagesForPdf.length) {
+                report.imagesForPdf.forEach(function (item) { list.push({ src: item.dataUrl || item.url, caption: item.caption || '' }); });
+            } else if (report.images && report.images.length) {
+                report.images.forEach(function (item) { list.push({ src: item.url || '', caption: item.caption || '' }); });
+            }
+            if (list.length === 0) return;
+            window._lampiranList = list;
+            window._lampiranCurrent = 0;
+            showLampiranLightboxImage();
+            var lb = document.getElementById('lampiranLightbox');
+            if (lb) { lb.classList.add('open'); lb.setAttribute('aria-hidden', 'false'); }
+        }
+        function showLampiranLightboxImage() {
+            var list = window._lampiranList;
+            var cur = window._lampiranCurrent;
+            if (!list || !list.length) return;
+            var item = list[cur];
+            document.getElementById('lampiranLightboxImg').src = item.src;
+            document.getElementById('lampiranLightboxCaption').textContent = item.caption || '';
+            document.getElementById('lampiranLightboxCounter').textContent = (cur + 1) + ' / ' + list.length;
+        }
+        function closeLampiranLightbox() {
+            var lb = document.getElementById('lampiranLightbox');
+            if (lb) { lb.classList.remove('open'); lb.setAttribute('aria-hidden', 'true'); }
+        }
+        (function () {
+            var lb = document.getElementById('lampiranLightbox');
+            if (!lb) return;
+            document.getElementById('lampiranLightboxClose').addEventListener('click', closeLampiranLightbox);
+            document.getElementById('lampiranLightboxPrev').addEventListener('click', function () {
+                if (!window._lampiranList || !window._lampiranList.length) return;
+                window._lampiranCurrent = (window._lampiranCurrent - 1 + window._lampiranList.length) % window._lampiranList.length;
+                showLampiranLightboxImage();
+            });
+            document.getElementById('lampiranLightboxNext').addEventListener('click', function () {
+                if (!window._lampiranList || !window._lampiranList.length) return;
+                window._lampiranCurrent = (window._lampiranCurrent + 1) % window._lampiranList.length;
+                showLampiranLightboxImage();
+            });
+            lb.addEventListener('click', function (e) { if (e.target === lb) closeLampiranLightbox(); });
+            document.addEventListener('keydown', function (e) {
+                if (!lb.classList.contains('open')) return;
+                if (e.key === 'Escape') closeLampiranLightbox();
+                else if (e.key === 'ArrowLeft') document.getElementById('lampiranLightboxPrev').click();
+                else if (e.key === 'ArrowRight') document.getElementById('lampiranLightboxNext').click();
+            });
+        })();
+
+        function closePdfModal() {
+            var modal = document.getElementById('pdfModal');
+            var viewer = document.getElementById('pdfModalViewer');
+            var loadingEl = document.getElementById('pdfModalLoading');
+            if (modal) modal.style.display = 'none';
+            if (viewer) viewer.src = '';
+            if (loadingEl) loadingEl.classList.remove('hidden');
+        }
+        document.getElementById('pdfModalClose').addEventListener('click', closePdfModal);
+        document.getElementById('pdfModal').addEventListener('click', function (e) {
+            if (e.target === this) closePdfModal();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closePdfModal();
+        });
+
+        function openQuarterSummaryModal() {
+            var data = window.quarterSummaryData;
+            if (!data) return;
+            var modal = document.getElementById('quarterSummaryModal');
+            var titleEl = document.getElementById('quarterSummaryTitle');
+            var submittedEl = document.getElementById('quarterSummarySubmitted');
+            var notSubmittedEl = document.getElementById('quarterSummaryNotSubmitted');
+            if (!modal || !titleEl || !submittedEl || !notSubmittedEl) return;
+            titleEl.textContent = 'Laporan ' + data.quarter + ' – Ringkasan';
+            submittedEl.innerHTML = data.submitted.length
+                ? data.submitted.map(function (d) { return '<li>' + d + '</li>'; }).join('')
+                : '<li class="quarter-summary-empty">Tiada bahagian yang telah menghantar.</li>';
+            notSubmittedEl.innerHTML = data.notSubmitted.length
+                ? data.notSubmitted.map(function (d) { return '<li>' + d + '</li>'; }).join('')
+                : '<li class="quarter-summary-empty">Semua bahagian telah menghantar.</li>';
+            modal.style.display = 'block';
+            modal.setAttribute('aria-hidden', 'false');
+        }
+        function closeQuarterSummaryModal() {
+            var modal = document.getElementById('quarterSummaryModal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        }
+        var statCard = document.getElementById('statThisQuarterCard');
+        if (statCard) {
+            statCard.addEventListener('click', function () {
+                if (window.quarterSummaryData) openQuarterSummaryModal();
+            });
+            statCard.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (window.quarterSummaryData) openQuarterSummaryModal();
+                }
+            });
+        }
+        document.getElementById('quarterSummaryClose').addEventListener('click', closeQuarterSummaryModal);
+        document.getElementById('quarterSummaryModal').addEventListener('click', function (e) {
+            if (e.target === this) closeQuarterSummaryModal();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                var qm = document.getElementById('quarterSummaryModal');
+                if (qm && qm.style.display === 'block') closeQuarterSummaryModal();
             }
         });
 
