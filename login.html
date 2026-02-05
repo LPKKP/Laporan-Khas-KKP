@@ -122,15 +122,17 @@
             <h1>Login</h1>
         </div>
         <div class="form-container">
-            <div class="input-group">
-                <label for="email">Email or Division (Bahagian/Zon/Unit)</label>
-                <input type="text" id="email" placeholder="Enter email or division" value="" autocomplete="username">
-            </div>
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" placeholder="Enter your password" value="">
-            </div>
-            <button class="btn" id="loginBtn">Login</button>
+            <form id="loginForm" action="#" method="post">
+                <div class="input-group">
+                    <label for="email">Email or Division (Bahagian/Zon/Unit)</label>
+                    <input type="text" id="email" placeholder="Enter email or division" value="" autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" value="" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn" id="loginBtn">Login</button>
+            </form>
             <div class="message" id="loginMessage"></div>
 
             <div class="info">
@@ -213,7 +215,12 @@
             });
         });
 
-        loginBtn.addEventListener('click', async () => {
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            performLogin();
+        });
+
+        async function performLogin() {
             const identifier = (document.getElementById('email').value || '').trim();
             const password = document.getElementById('password').value;
 
@@ -299,7 +306,7 @@
                 }
                 updateDebugInfo('query', `Error: ${error.code || ''} - ${error.message}`);
             }
-        });
+        }
     </script>
 </body>
 </html>
