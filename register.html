@@ -215,7 +215,7 @@
         const divisionHidden = document.getElementById('division');
         const divisionListEl = document.getElementById('divisionList');
 
-        const DIVISIONS = Array.from({ length: 48 }, (_, i) => 'Division ' + (i + 1));
+        const DIVISIONS = ['-', ...Array.from({ length: 48 }, (_, i) => 'Division ' + (i + 1))];
 
         function buildDivisionList() {
             const optionsHtml = DIVISIONS.map(d => 
@@ -289,23 +289,28 @@
 
             try {
                 const divisionKey = normalizeDivision(division);
-                const divisionRef = db.collection('divisionLookup').doc(divisionKey);
+                const isAdminDivision = division === '-';
 
-                const existingDoc = await divisionRef.get();
-                if (existingDoc.exists) {
-                    const existingEmail = ((existingDoc.data() || {}).email || '').toLowerCase();
-                    if (existingEmail !== email) {
-                        registerMessage.textContent = 'This division is already registered. Use a different division or log in with your email.';
-                        registerMessage.classList.remove('success-message');
-                        return;
+                if (!isAdminDivision) {
+                    const divisionRef = db.collection('divisionLookup').doc(divisionKey);
+                    const existingDoc = await divisionRef.get();
+                    if (existingDoc.exists) {
+                        const existingEmail = ((existingDoc.data() || {}).email || '').toLowerCase();
+                        if (existingEmail !== email) {
+                            registerMessage.textContent = 'This division is already registered. Use a different division or log in with your email.';
+                            registerMessage.classList.remove('success-message');
+                            return;
+                        }
+                        // Same email = user is re-applying for their own division (e.g. after denial). Allow to proceed.
                     }
-                    // Same email = user is re-applying for their own division (e.g. after denial). Allow to proceed.
                 }
 
                 const cred = await auth.createUserWithEmailAndPassword(email, password);
                 const user = cred.user;
 
-                await divisionRef.set({ email: email });
+                if (!isAdminDivision) {
+                    await db.collection('divisionLookup').doc(divisionKey).set({ email: email });
+                }
                 await db.collection('userRoles').doc(email).set({
                     role: 'pending',
                     division: division,
@@ -326,23 +331,26 @@
                         const currentRole = (roleSnap.exists ? roleSnap.data() : {}).role || '';
                         const canReapply = currentRole === 'denied' || !roleSnap.exists;
                         if (canReapply) {
-                            const divisionKey = normalizeDivision(division);
-                            const newDivLookup = await db.collection('divisionLookup').doc(divisionKey).get();
-                            const lookupEmail = ((newDivLookup.data() || {}).email || '').toLowerCase();
-                            if (newDivLookup.exists && lookupEmail !== email) {
-                                await auth.signOut();
-                                registerMessage.textContent = 'This division is already registered by another user. Choose a different division.';
-                                return;
-                            }
-                            const oldDivision = (roleSnap.data() || {}).division || '';
-                            const oldKey = normalizeDivision(oldDivision);
-                            if (oldKey && oldKey !== divisionKey) {
-                                const oldLookup = await db.collection('divisionLookup').doc(oldKey).get();
-                                if (oldLookup.exists && (oldLookup.data() || {}).email === email) {
-                                    await db.collection('divisionLookup').doc(oldKey).delete();
+                            const isAdminDivision = division === '-';
+                            if (!isAdminDivision) {
+                                const divisionKey = normalizeDivision(division);
+                                const newDivLookup = await db.collection('divisionLookup').doc(divisionKey).get();
+                                const lookupEmail = ((newDivLookup.data() || {}).email || '').toLowerCase();
+                                if (newDivLookup.exists && lookupEmail !== email) {
+                                    await auth.signOut();
+                                    registerMessage.textContent = 'This division is already registered by another user. Choose a different division.';
+                                    return;
                                 }
+                                const oldDivision = (roleSnap.data() || {}).division || '';
+                                const oldKey = normalizeDivision(oldDivision);
+                                if (oldKey && oldKey !== '-' && oldKey !== divisionKey) {
+                                    const oldLookup = await db.collection('divisionLookup').doc(oldKey).get();
+                                    if (oldLookup.exists && (oldLookup.data() || {}).email === email) {
+                                        await db.collection('divisionLookup').doc(oldKey).delete();
+                                    }
+                                }
+                                await db.collection('divisionLookup').doc(divisionKey).set({ email: email });
                             }
-                            await db.collection('divisionLookup').doc(divisionKey).set({ email: email });
                             await db.collection('userRoles').doc(email).set({
                                 role: 'pending',
                                 division: division,
