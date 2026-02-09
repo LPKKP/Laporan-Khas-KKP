@@ -754,19 +754,26 @@
                 var userCount = 0;
                 var divSet = {};
                 var allDivisionsMap = {};
+                var userOnlyDivSet = {};
+                var userOnlyDivisionsMap = {};
                 userSnap.docs.forEach(function (d) {
                     var data = d.data();
                     var role = (data.role || '').toLowerCase();
+                    var div = (data.division || '').trim();
                     if (isApprovedRole(role)) {
                         userCount++;
-                        var div = (data.division || '').trim();
                         if (div) {
                             divSet[div.toLowerCase()] = true;
                             allDivisionsMap[div.toLowerCase()] = div;
                         }
                     }
+                    if (role === 'user' && div && div !== '-') {
+                        userOnlyDivSet[div.toLowerCase()] = true;
+                        userOnlyDivisionsMap[div.toLowerCase()] = div;
+                    }
                 });
                 var totalDivisions = Object.keys(divSet).length;
+                var totalUserDivisions = Object.keys(userOnlyDivSet).length;
 
                 var pendingCount = 0;
                 userSnap.docs.forEach(function (d) {
@@ -789,10 +796,12 @@
                 var thisQuarterDivisions = {};
                 thisQuarterSnap.docs.forEach(function (d) {
                     var div = (d.data().division || '').trim();
-                    if (div) thisQuarterDivisions[div.toLowerCase()] = allDivisionsMap[div.toLowerCase()] || div;
+                    if (div && userOnlyDivisionsMap[div.toLowerCase()]) {
+                        thisQuarterDivisions[div.toLowerCase()] = userOnlyDivisionsMap[div.toLowerCase()] || div;
+                    }
                 });
                 var thisQuarterCount = Object.keys(thisQuarterDivisions).length;
-                var allDivisions = Object.values(allDivisionsMap).sort();
+                var allDivisions = Object.values(userOnlyDivisionsMap).sort();
                 var submittedDivisions = Object.values(thisQuarterDivisions).sort();
                 var notSubmittedDivisions = allDivisions.filter(function (div) {
                     return !thisQuarterDivisions[div.toLowerCase()];
@@ -805,7 +814,7 @@
 
                 statUsersEl.textContent = userCount;
                 statReportsEl.textContent = reportCount;
-                statThisQuarterEl.textContent = thisQuarterCount + ' / ' + totalDivisions;
+                statThisQuarterEl.textContent = thisQuarterCount + ' / ' + totalUserDivisions;
                 statUsersEl.classList.remove('loading');
                 statReportsEl.classList.remove('loading');
                 statThisQuarterEl.classList.remove('loading');
