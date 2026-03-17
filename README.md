@@ -122,6 +122,7 @@ Stores only structured form data. **No PDF is stored**; PDFs are generated on de
 | Document ID | Field | Type | Description |
 |-------------|-------|------|-------------|
 | (user email) | role | string | `admin` or `user` |
+| | username | string | **Required.** Set in profile. |
 | | division | string | Bahagian/Zon/Unit (optional) |
 | | createdAt | timestamp | Optional |
 | | disabled | boolean | Optional, for disabling access |
@@ -141,9 +142,24 @@ Used to resolve division → email when logging in with division + password. Div
 | `login.html` | Sign in with email or division + password |
 | `register.html` | Self-register with email, password, division |
 | `index.html` | Dashboard; links to form, data, admin |
+| `profile.html` | Edit profile: **username** (required) and change own password |
 | `form.html` | KKP report form; saves to Firestore, downloads PDF |
 | `data.html` | List reports; View/Download regenerates PDF from data |
-| `admin.html` | Admin-only; manage user roles (requires `userRoles` doc with `role: admin`) |
+| `admin.html` | Admin-only; manage user roles, division list, **set password for user** (non-admin) |
+
+### Admin: Set user password (forgotten password)
+
+Admins can set a new password for any non-admin user from the website (no email sent). User contacts admin (e.g. by phone); admin opens **Admin** → **Set kata laluan untuk pengguna**, selects the user by **username – bahagian**, enters the new password and confirms. This uses a **Firebase Cloud Function** (`setUserPassword`). You must deploy the function once (see below).
+
+### Deploy Cloud Function (admin set password)
+
+To enable **Admin → Set kata laluan untuk pengguna**, deploy the callable function once:
+
+1. Install [Firebase CLI](https://firebase.google.com/docs/cli) and log in: `firebase login`.
+2. In the project root, run: `firebase init functions` (if you have no `functions` folder yet). Choose TypeScript or JavaScript; the repo includes a `functions` folder with JavaScript.
+3. From the project root: `cd functions && npm install && cd ..`
+4. Deploy: `firebase deploy --only functions`
+5. The function `setUserPassword` is in region `asia-southeast1`. If you use another region, change it in `functions/index.js` and in `admin.html` (search for `asia-southeast1`).
 
 ## Run Locally
 

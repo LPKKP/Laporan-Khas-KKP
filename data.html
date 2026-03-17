@@ -943,6 +943,7 @@
         <h1>Data Laporan KKP</h1>
         <div>
             <a href="index.html" class="back-btn">Laman Utama</a>
+            <a href="profile.html" class="back-btn" style="margin-right:8px;">Profil</a>
             <button class="logout-btn" id="logoutBtn">Log Keluar</button>
         </div>
     </div>
@@ -1331,14 +1332,13 @@
                 });
         }
 
-        // Load division filter from all reports
+        // Load division filter from loaded reports
         function loadDivisionFilter() {
             const divisions = new Set();
             allReports.forEach(report => {
                 const division = report.division;
                 if (division) divisions.add(division);
             });
-            
             updateDivisionFilter(divisions);
         }
 
@@ -1661,8 +1661,16 @@
         }
 
         function handleLogout() {
-            localStorage.removeItem('userEmail');
-            window.location.href = 'login.html';
+            const auth = getAuth();
+            if (auth) {
+                auth.signOut().finally(() => {
+                    localStorage.removeItem('userEmail');
+                    window.location.href = 'login.html?logout=1';
+                });
+            } else {
+                localStorage.removeItem('userEmail');
+                window.location.href = 'login.html?logout=1';
+            }
         }
 
         function closePdfModal() {

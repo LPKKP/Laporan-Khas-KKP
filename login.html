@@ -186,12 +186,14 @@
         }
 
         function normalizeDivision(val) {
-            return (val || '').trim().toLowerCase();
+            return (val || '').trim().toLowerCase().replace(/\//g, '_');
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const msg = params.get('msg');
+            const fromLogout = params.get('logout') === '1';
+
             if (msg === 'pending') {
                 loginMessage.textContent = 'Your account is pending approval. Please wait for an admin to approve your registration.';
                 loginMessage.classList.remove('success-message');
@@ -202,7 +204,18 @@
                 loginMessage.textContent = 'Akaun anda telah dipadam. Sila hubungi pentadbir jika ini satu kesilapan.';
                 loginMessage.classList.remove('success-message');
             }
+
+            if (fromLogout && auth) {
+                auth.signOut().catch(function() {});
+            }
+
             auth && auth.onAuthStateChanged(user => {
+                const hasLogoutParam = new URLSearchParams(window.location.search).get('logout') === '1';
+                if (user && hasLogoutParam) {
+                    auth.signOut().catch(function() {});
+                    window.history.replaceState({}, '', 'login.html');
+                    return;
+                }
                 if (user) {
                     const email = user.email || '';
                     localStorage.setItem('userEmail', email);
@@ -210,6 +223,7 @@
                     loginMessage.classList.add('success-message');
                     setTimeout(() => { window.location.href = 'index.html'; }, 1200);
                 } else {
+                    if (hasLogoutParam) window.history.replaceState({}, '', 'login.html');
                     updateDebugInfo('storage', 'No authenticated user');
                 }
             });
@@ -234,7 +248,6 @@
             loginMessage.classList.remove('success-message');
             updateDebugInfo('query', `Signing in: ${identifier}`);
 
-            let emailToUse = identifier;
             if (!identifier.includes('@')) {
                 const divisionKey = normalizeDivision(identifier);
                 try {
@@ -244,22 +257,59 @@
                         loginMessage.classList.remove('success-message');
                         return;
                     }
-                    emailToUse = (snap.data() || {}).email || '';
-                    if (!emailToUse) {
+                    const data = snap.data() || {};
+                    const emails = Array.isArray(data.emails) ? data.emails : (data.email ? [data.email] : []);
+                    if (emails.length === 0) {
                         loginMessage.textContent = 'Invalid division lookup. Try logging in with your email.';
                         loginMessage.classList.remove('success-message');
                         return;
+                    }
+                    let signedIn = false;
+                    for (let i = 0; i < emails.length; i++) {
+                        const e = (emails[i] || '').trim();
+                        if (!e) continue;
+                        try {
+                            const cred = await auth.signInWithEmailAndPassword(e, password);
+                            const user = cred.user;
+                            const signedEmail = (user && user.email ? user.email : e).toLowerCase();
+                            const roleDoc = await db.collection('userRoles').doc(signedEmail).get();
+                            const role = (roleDoc.data() || {}).role || 'pending';
+                            if (role === 'pending') {
+                                await auth.signOut();
+                                continue;
+                            }
+                            if (role === 'denied') {
+                                await auth.signOut();
+                                continue;
+                            }
+                            loginMessage.textContent = 'Signed in. Redirecting...';
+                            loginMessage.classList.add('success-message');
+                            localStorage.setItem('userEmail', signedEmail);
+                            updateDebugInfo('user', 'Signed in: ' + signedEmail);
+                            setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+                            signedIn = true;
+                            break;
+                        } catch (err) {
+                            if (i === emails.length - 1) {
+                                loginMessage.textContent = 'Invalid email/division or password. Sign up first if you are new.';
+                                loginMessage.classList.remove('success-message');
+                            }
+                            continue;
+                        }
+                    }
+                    if (!signedIn && !loginMessage.textContent) {
+                        loginMessage.textContent = 'Your account is pending or denied. Use your email to log in, or wait for admin approval.';
+                        loginMessage.classList.remove('success-message');
                     }
                 } catch (lookupErr) {
                     console.error('Division lookup error:', lookupErr);
                     loginMessage.textContent = 'Could not look up division. Try logging in with your email.';
                     loginMessage.classList.remove('success-message');
-                    return;
                 }
-            } else {
-                emailToUse = identifier.toLowerCase();
+                return;
             }
 
+            const emailToUse = identifier.toLowerCase();
             try {
                 const cred = await auth.signInWithEmailAndPassword(emailToUse, password);
                 const user = cred.user;

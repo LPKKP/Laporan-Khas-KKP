@@ -50,6 +50,63 @@ function getUserRoleAndDivision(callback) {
         .catch(function(err) { callback(err, null); });
 }
 
+// Default division list when none saved in Firestore (Division 1–10 + '-' for admin).
+function getDefaultDivisionList() {
+    return ['-'].concat(Array.from({ length: 10 }, function(_, i) { return 'Division ' + (i + 1); }));
+}
+
+// Cache key and TTL (5 min) for division list to avoid extra Firestore reads on every load
+var DIVISION_LIST_CACHE_KEY = 'divisionListCache';
+var DIVISION_LIST_CACHE_TIME_KEY = 'divisionListCacheTime';
+var DIVISION_LIST_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function clearDivisionListCache() {
+    try {
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem(DIVISION_LIST_CACHE_KEY);
+            sessionStorage.removeItem(DIVISION_LIST_CACHE_TIME_KEY);
+        }
+    } catch (e) { /* ignore */ }
+}
+
+// Load division options from Firestore config. Calls callback(err, list).
+// Uses sessionStorage cache to speed up repeat loads (e.g. register page).
+function getDivisionList(callback) {
+    try {
+        var cached = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(DIVISION_LIST_CACHE_KEY);
+        var cachedTime = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(DIVISION_LIST_CACHE_TIME_KEY);
+        if (cached && cachedTime) {
+            var list = JSON.parse(cached);
+            var age = Date.now() - parseInt(cachedTime, 10);
+            if (Array.isArray(list) && age >= 0 && age < DIVISION_LIST_CACHE_TTL_MS) {
+                callback(null, list);
+                return;
+            }
+        }
+    } catch (e) { /* ignore cache errors */ }
+    var db = getDb();
+    if (!db) {
+        callback(new Error('Database not available'), null);
+        return;
+    }
+    db.collection('config').doc('divisions').get()
+        .then(function(snap) {
+            var data = snap.exists ? snap.data() : {};
+            var list = Array.isArray(data.list) ? data.list : [];
+            if (list.length === 0) {
+                list = getDefaultDivisionList();
+            }
+            try {
+                if (typeof sessionStorage !== 'undefined') {
+                    sessionStorage.setItem(DIVISION_LIST_CACHE_KEY, JSON.stringify(list));
+                    sessionStorage.setItem(DIVISION_LIST_CACHE_TIME_KEY, String(Date.now()));
+                }
+            } catch (e) { /* ignore */ }
+            callback(null, list);
+        })
+        .catch(function(err) { callback(err, null); });
+}
+
 // Require admin; if not admin, redirect to index. Calls onReady() when user is admin.
 function requireAdmin(onReady) {
     requireAuth(function(user) {

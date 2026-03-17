@@ -548,7 +548,10 @@
     <div class="dashboard-content hidden" id="dashboardContent">
     <div class="header">
         <h1>Dashboard - Laporan KKP</h1>
-        <button class="logout-btn" id="logoutBtn">Log Keluar</button>
+        <div style="display:flex;gap:10px;align-items:center;">
+            <a href="profile.html" class="action-btn" style="padding:8px 16px;font-size:14px;">Profil</a>
+            <button class="logout-btn" id="logoutBtn">Log Keluar</button>
+        </div>
     </div>
 
     <div class="dashboard-container">
@@ -683,6 +686,11 @@
                 var roleData = roleDoc.data() || {};
                 role = roleData.role || 'user';
                 division = (roleData.division || '').trim();
+                var username = (roleData.username || '').trim();
+                if (!username) {
+                    window.location.href = 'profile.html?msg=set_username';
+                    return;
+                }
             } catch (err) {
                 console.warn('Could not ensure userRoles doc:', err);
             }
@@ -752,6 +760,8 @@
                     return role === 'admin' || role === 'user';
                 }
                 var userCount = 0;
+                var userOnlyCount = 0;
+                var adminEmails = {};
                 var divSet = {};
                 var allDivisionsMap = {};
                 var userOnlyDivSet = {};
@@ -760,6 +770,7 @@
                     var data = d.data();
                     var role = (data.role || '').toLowerCase();
                     var div = (data.division || '').trim();
+                    var em = (d.id || '').toLowerCase();
                     if (isApprovedRole(role)) {
                         userCount++;
                         if (div) {
@@ -767,13 +778,16 @@
                             allDivisionsMap[div.toLowerCase()] = div;
                         }
                     }
-                    if (role === 'user' && div && div !== '-') {
-                        userOnlyDivSet[div.toLowerCase()] = true;
-                        userOnlyDivisionsMap[div.toLowerCase()] = div;
+                    if (role === 'admin') adminEmails[em] = true;
+                    if (role === 'user') {
+                        userOnlyCount++;
+                        if (div && div !== '-') {
+                            userOnlyDivSet[div.toLowerCase()] = true;
+                            userOnlyDivisionsMap[div.toLowerCase()] = div;
+                        }
                     }
                 });
                 var totalDivisions = Object.keys(divSet).length;
-                var totalUserDivisions = Object.keys(userOnlyDivSet).length;
 
                 var pendingCount = 0;
                 userSnap.docs.forEach(function (d) {
@@ -793,14 +807,17 @@
 
                 var reportCount = (await db.collection('kkpReports').get()).size;
                 var thisQuarterSnap = await db.collection('kkpReports').where('quarter', '==', currentQuarter).get();
+                var thisQuarterReportCountByUsers = 0;
                 var thisQuarterDivisions = {};
                 thisQuarterSnap.docs.forEach(function (d) {
-                    var div = (d.data().division || '').trim();
+                    var data = d.data();
+                    var createdBy = (data.createdBy || '').toLowerCase();
+                    if (createdBy && !adminEmails[createdBy]) thisQuarterReportCountByUsers++;
+                    var div = (data.division || '').trim();
                     if (div && userOnlyDivisionsMap[div.toLowerCase()]) {
                         thisQuarterDivisions[div.toLowerCase()] = userOnlyDivisionsMap[div.toLowerCase()] || div;
                     }
                 });
-                var thisQuarterCount = Object.keys(thisQuarterDivisions).length;
                 var allDivisions = Object.values(userOnlyDivisionsMap).sort();
                 var submittedDivisions = Object.values(thisQuarterDivisions).sort();
                 var notSubmittedDivisions = allDivisions.filter(function (div) {
@@ -814,7 +831,7 @@
 
                 statUsersEl.textContent = userCount;
                 statReportsEl.textContent = reportCount;
-                statThisQuarterEl.textContent = thisQuarterCount + ' / ' + totalUserDivisions;
+                statThisQuarterEl.textContent = thisQuarterReportCountByUsers + ' / ' + userOnlyCount;
                 statUsersEl.classList.remove('loading');
                 statReportsEl.classList.remove('loading');
                 statThisQuarterEl.classList.remove('loading');
@@ -1087,7 +1104,7 @@
         logoutBtn.addEventListener('click', () => {
             auth.signOut().finally(() => {
                 localStorage.removeItem('userEmail');
-                window.location.href = 'login.html';
+                window.location.href = 'login.html?logout=1';
             });
         });
     </script>

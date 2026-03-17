@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil - Laporan KKP</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            max-width: 600px;
+            margin: 0 auto 20px;
+            background: #4a6cf7;
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 22px; font-weight: 600; }
+        .header-actions { display: flex; gap: 10px; }
+        .btn {
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .btn-secondary { background: #6c757d; color: white; text-decoration: none; display: inline-block; }
+        .btn-secondary:hover { background: #5a6268; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-primary { background: #4a6cf7; color: white; }
+        .btn-primary:hover { background: #3a5cd8; }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        .breadcrumb { margin-bottom: 20px; font-size: 14px; color: #666; }
+        .breadcrumb a { color: #4a6cf7; text-decoration: none; }
+        .profile-section {
+            margin-bottom: 28px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #eee;
+        }
+        .profile-section:last-of-type { border-bottom: none; }
+        .profile-section h2 { color: #4a6cf7; font-size: 18px; margin-bottom: 16px; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #333; }
+        .input-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+        .input-group input:focus { border-color: #4a6cf7; outline: none; }
+        .hint { font-size: 13px; color: #666; margin-top: 4px; }
+        .message { min-height: 24px; margin-top: 12px; font-size: 14px; }
+        .message.success { color: #28a745; }
+        .message.error { color: #dc3545; }
+    </style>
+    <script src="config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="common.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>Profil</h1>
+        <div class="header-actions">
+            <a href="index.html" class="btn btn-secondary">Laman Utama</a>
+            <button class="btn btn-danger" id="logoutBtn">Log Keluar</button>
+        </div>
+    </div>
+    <div class="container">
+        <nav class="breadcrumb" aria-label="Navigasi"><a href="index.html">Laman Utama</a> &gt; <strong>Profil</strong></nav>
+
+        <div class="profile-section">
+            <h2>Username</h2>
+            <p class="hint">Nama pengguna (wajib). Digunakan untuk ciri-ciri masa hadapan.</p>
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Masukkan username" minlength="2" maxlength="50" required>
+            </div>
+            <button type="button" class="btn btn-primary" id="saveUsernameBtn">Simpan username</button>
+            <div class="message" id="usernameMessage"></div>
+        </div>
+
+        <div class="profile-section">
+            <h2>Tukar kata laluan</h2>
+            <p class="hint">Masukkan kata laluan semasa dan kata laluan baharu.</p>
+            <div class="input-group">
+                <label for="currentPassword">Kata laluan semasa</label>
+                <input type="password" id="currentPassword" placeholder="Kata laluan semasa" autocomplete="current-password">
+            </div>
+            <div class="input-group">
+                <label for="newPassword">Kata laluan baharu</label>
+                <input type="password" id="newPassword" placeholder="Sekurang-kurangnya 6 aksara" minlength="6" autocomplete="new-password">
+            </div>
+            <div class="input-group">
+                <label for="confirmPassword">Sahkan kata laluan baharu</label>
+                <input type="password" id="confirmPassword" placeholder="Taip semula kata laluan baharu" autocomplete="new-password">
+            </div>
+            <button type="button" class="btn btn-primary" id="changePasswordBtn">Tukar kata laluan</button>
+            <div class="message" id="passwordMessage"></div>
+        </div>
+    </div>
+    <script>
+        const auth = getAuth();
+        const db = getDb();
+        const usernameEl = document.getElementById('username');
+        const saveUsernameBtn = document.getElementById('saveUsernameBtn');
+        const usernameMessage = document.getElementById('usernameMessage');
+        const currentPasswordEl = document.getElementById('currentPassword');
+        const newPasswordEl = document.getElementById('newPassword');
+        const confirmPasswordEl = document.getElementById('confirmPassword');
+        const changePasswordBtn = document.getElementById('changePasswordBtn');
+        const passwordMessage = document.getElementById('passwordMessage');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        function showUsernameMessage(text, isError) {
+            usernameMessage.textContent = text;
+            usernameMessage.className = 'message ' + (isError ? 'error' : 'success');
+        }
+        function showPasswordMessage(text, isError) {
+            passwordMessage.textContent = text;
+            passwordMessage.className = 'message ' + (isError ? 'error' : 'success');
+        }
+
+        requireAuth(function(user) {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('msg') === 'set_username') {
+                usernameMessage.textContent = 'Sila tetapkan username anda (wajib).';
+                usernameMessage.className = 'message error';
+            }
+            const email = (user.email || '').toLowerCase();
+            db.collection('userRoles').doc(email).get()
+                .then(function(snap) {
+                    const data = snap.exists ? snap.data() : {};
+                    usernameEl.value = (data.username || '').trim();
+                })
+                .catch(function() {});
+        });
+
+        saveUsernameBtn.addEventListener('click', function() {
+            const username = (usernameEl.value || '').trim();
+            if (!username) {
+                showUsernameMessage('Username wajib diisi.', true);
+                return;
+            }
+            if (username.length < 2) {
+                showUsernameMessage('Username sekurang-kurangnya 2 aksara.', true);
+                return;
+            }
+            const auth = getAuth();
+            const user = auth && auth.currentUser;
+            if (!user) {
+                showUsernameMessage('Sila log masuk semula.', true);
+                return;
+            }
+            const email = (user.email || '').toLowerCase();
+            saveUsernameBtn.disabled = true;
+            db.collection('userRoles').doc(email).set({ username: username }, { merge: true })
+                .then(function() {
+                    showUsernameMessage('Username telah disimpan.');
+                    saveUsernameBtn.disabled = false;
+                })
+                .catch(function(err) {
+                    showUsernameMessage('Gagal menyimpan: ' + (err.message || 'Cuba lagi.'), true);
+                    saveUsernameBtn.disabled = false;
+                });
+        });
+
+        changePasswordBtn.addEventListener('click', function() {
+            const current = currentPasswordEl.value;
+            const newPwd = newPasswordEl.value;
+            const confirm = confirmPasswordEl.value;
+            if (!current) {
+                showPasswordMessage('Masukkan kata laluan semasa.', true);
+                return;
+            }
+            if (!newPwd || newPwd.length < 6) {
+                showPasswordMessage('Kata laluan baharu sekurang-kurangnya 6 aksara.', true);
+                return;
+            }
+            if (newPwd !== confirm) {
+                showPasswordMessage('Sahkan kata laluan tidak sepadan.', true);
+                return;
+            }
+            const user = auth.currentUser;
+            if (!user) {
+                showPasswordMessage('Sila log masuk semula.', true);
+                return;
+            }
+            changePasswordBtn.disabled = true;
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, current);
+            user.reauthenticateWithCredential(credential)
+                .then(function() {
+                    return user.updatePassword(newPwd);
+                })
+                .then(function() {
+                    showPasswordMessage('Kata laluan telah ditukar.');
+                    currentPasswordEl.value = '';
+                    newPasswordEl.value = '';
+                    confirmPasswordEl.value = '';
+                    changePasswordBtn.disabled = false;
+                })
+                .catch(function(err) {
+                    if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                        showPasswordMessage('Kata laluan semasa tidak betul.', true);
+                    } else {
+                        showPasswordMessage(err.message || 'Gagal menukar kata laluan.', true);
+                    }
+                    changePasswordBtn.disabled = false;
+                });
+        });
+
+        logoutBtn.addEventListener('click', function() {
+            auth.signOut().finally(function() {
+                localStorage.removeItem('userEmail');
+                window.location.href = 'login.html?logout=1';
+            });
+        });
+    </script>
+</body>
+</html>

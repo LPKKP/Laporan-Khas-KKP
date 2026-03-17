@@ -120,6 +120,60 @@
         .pending-empty { color: #856404; font-size: 14px; }
         .pending-approvals-section.hidden { display: none; }
 
+        .divisions-section {
+            margin-top: 24px;
+            margin-bottom: 24px;
+            padding: 0;
+            border: 1px solid #4a6cf7;
+            background: #f0f4ff;
+            border-radius: 5px;
+        }
+        .divisions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+        }
+        .divisions-header strong { color: #4a6cf7; }
+        .divisions-toggle-indicator {
+            font-size: 13px;
+            color: #555;
+        }
+        .divisions-body {
+            padding: 0 16px 16px 16px;
+        }
+        .divisions-section.collapsed .divisions-body {
+            display: none;
+        }
+        .divisions-section.collapsed .divisions-toggle-indicator::after {
+            content: ' (dibuka)';
+        }
+        .divisions-section:not(.collapsed) .divisions-toggle-indicator::after {
+            content: ' (ditutup)';
+        }
+        .divisions-desc { font-size: 13px; color: #555; margin-bottom: 12px; }
+        .divisions-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+        .divisions-toolbar input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; min-width: 180px; }
+        .divisions-toolbar .btn-add { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 5px; font-weight: 600; cursor: pointer; }
+        .divisions-toolbar .btn-add:hover { background: #218838; }
+        .divisions-toolbar .btn-save { background: #4a6cf7; color: white; border: none; padding: 8px 16px; border-radius: 5px; font-weight: 600; cursor: pointer; }
+        .divisions-toolbar .btn-save:hover { background: #3a5cd8; }
+        .divisions-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .division-tag {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 10px; background: white; border: 1px solid #4a6cf7; border-radius: 5px;
+            font-size: 14px; color: #333;
+        }
+        .division-tag .btn-edit-division, .division-tag .btn-remove-division {
+            border: none; padding: 2px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;
+        }
+        .division-tag .btn-edit-division { background: #4a6cf7; color: white; }
+        .division-tag .btn-edit-division:hover { background: #3a5cd8; }
+        .division-tag .btn-remove-division { background: #dc3545; color: white; }
+        .division-tag .btn-remove-division:hover { background: #c82333; }
+        .division-tag.editing input { padding: 4px 8px; font-size: 14px; width: 120px; border: 1px solid #4a6cf7; border-radius: 4px; }
+
         .filters {
             display: flex;
             flex-wrap: wrap;
@@ -214,6 +268,48 @@
             cursor: pointer;
         }
 
+        .user-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .user-modal-overlay.open { display: flex; }
+        .user-modal-content {
+            background: #fff;
+            border-radius: 10px;
+            max-width: 440px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .user-modal-content h3 { margin-bottom: 16px; color: #4a6cf7; font-size: 18px; }
+        .user-modal-field { margin-bottom: 14px; }
+        .user-modal-field label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+        .user-modal-field .value { font-size: 15px; color: #333; }
+        .user-modal-field input,
+        .user-modal-field select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .user-modal-actions {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .user-modal-actions .btn { padding: 8px 16px; font-size: 14px; cursor: pointer; border-radius: 5px; border: none; font-weight: 600; }
+        .user-modal-actions .btn-close { background: #6c757d; color: white; }
+        .user-modal-actions .btn-save { background: #4a6cf7; color: white; }
+        .user-modal-actions .btn-delete { background: #dc3545; color: white; }
+
         .btn-small-primary {
             background: #4a6cf7;
             color: white;
@@ -281,6 +377,7 @@
             <span id="adminInfo">Memuatkan...</span>
         </div>
         <div class="header-actions">
+            <a href="profile.html" class="btn btn-secondary">Profil</a>
             <button class="btn btn-secondary" id="backBtn">Laman Utama</button>
             <button class="btn btn-danger" id="logoutBtn">Log Keluar</button>
         </div>
@@ -335,9 +432,78 @@
             </tbody>
         </table>
 
+        <div class="divisions-section collapsed" id="divisionsSection">
+            <div class="divisions-header" id="divisionsHeader">
+                <strong>Senarai Bahagian (Division options)</strong>
+                <span class="divisions-toggle-indicator" id="divisionsToggleIndicator"></span>
+            </div>
+            <div class="divisions-body" id="divisionsBody">
+                <p class="divisions-desc">Options shown in the division dropdown on the registration page. Add, edit, or remove items and click Save.</p>
+                <div class="divisions-toolbar">
+                    <input type="text" id="newDivisionInput" placeholder="New division name..." maxlength="100">
+                    <button type="button" class="btn-add" id="addDivisionBtn">Tambah</button>
+                    <button type="button" class="btn-save" id="saveDivisionsBtn">Simpan senarai</button>
+                </div>
+                <div id="divisionsList" class="divisions-list"><!-- Filled by JS --></div>
+            </div>
+        </div>
+
+        <div id="userViewModal" class="user-modal-overlay" aria-hidden="true">
+            <div class="user-modal-content">
+                <h3>Lihat Akaun</h3>
+                <div class="user-modal-field"><label>Username</label><div class="value" id="viewUsername">—</div></div>
+                <div class="user-modal-field"><label>Division</label><div class="value" id="viewDivision">—</div></div>
+                <div class="user-modal-field"><label>Email</label><div class="value" id="viewEmail">—</div></div>
+                <div class="user-modal-field"><label>Role</label><div class="value" id="viewRole">—</div></div>
+                <div class="user-modal-actions">
+                    <button type="button" class="btn btn-close" id="userViewModalClose">Tutup</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="userEditModal" class="user-modal-overlay" aria-hidden="true">
+            <div class="user-modal-content">
+                <h3>Edit Akaun</h3>
+                <input type="hidden" id="editEmail" value="">
+                <div class="user-modal-field">
+                    <label for="editUsername">Username</label>
+                    <input type="text" id="editUsername" placeholder="Username" maxlength="50">
+                </div>
+                <div class="user-modal-field">
+                    <label for="editDivision">Division</label>
+                    <input type="text" id="editDivision" placeholder="Bahagian" maxlength="200">
+                </div>
+                <div class="user-modal-field">
+                    <label>Email</label>
+                    <div class="value" id="editEmailDisplay">—</div>
+                </div>
+                <div class="user-modal-field">
+                    <label for="editPassword">Kata laluan baharu (pilihan)</label>
+                    <input type="password" id="editPassword" placeholder="Kosongkan jika tidak tukar" minlength="6" autocomplete="new-password">
+                </div>
+                <div class="user-modal-field">
+                    <label for="editPasswordConfirm">Sahkan kata laluan</label>
+                    <input type="password" id="editPasswordConfirm" placeholder="Kosongkan jika tidak tukar" autocomplete="new-password">
+                </div>
+                <div class="user-modal-field">
+                    <label for="editRole">Role</label>
+                    <select id="editRole">
+                        <option value="user">user</option>
+                        <option value="admin">admin</option>
+                    </select>
+                </div>
+                <div class="user-modal-actions">
+                    <button type="button" class="btn btn-save" id="userEditSave">Simpan</button>
+                    <button type="button" class="btn btn-delete" id="userEditPadam">Padam</button>
+                    <button type="button" class="btn btn-close" id="userEditModalClose">Batal</button>
+                </div>
+            </div>
+        </div>
+
         <div class="message" id="message"></div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-functions-compat.js"></script>
     <script>
         const auth = getAuth();
         const db = getDb();
@@ -351,6 +517,7 @@
         const messageEl = document.getElementById('message');
 
         let allUsers = [];
+        let divisionList = [];
 
         function showMessage(text, type = 'success') {
             messageEl.textContent = text;
@@ -362,10 +529,142 @@
             messageEl.className = 'message';
         }
 
+        let divisionsLoaded = false;
+
         function onAdminReady(user) {
             const email = (user.email || '').toLowerCase().trim();
             adminInfoEl.textContent = 'Admin: ' + email;
             loadUsers();
+        }
+
+        function loadDivisions() {
+            const listEl = document.getElementById('divisionsList');
+            if (!listEl) return;
+            db.collection('config').doc('divisions').get()
+                .then((snap) => {
+                    const data = snap.exists ? snap.data() : {};
+                    const list = Array.isArray(data.list) ? data.list : [];
+                    divisionList = list.length > 0 ? list.slice() : getDefaultDivisionList().slice();
+                    renderDivisionsList();
+                })
+                .catch(() => {
+                    listEl.innerHTML = '<span class="message error">Gagal memuatkan senarai bahagian.</span>';
+                });
+        }
+
+        function renderDivisionsList() {
+            const listEl = document.getElementById('divisionsList');
+            if (!listEl) return;
+            listEl.innerHTML = divisionList.map((name, index) => {
+                const escaped = (name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return '<div class="division-tag" data-index="' + index + '">' +
+                    '<span class="division-tag-label">' + escaped + '</span>' +
+                    '<button type="button" class="btn-edit-division" data-index="' + index + '" aria-label="Edit">Edit</button>' +
+                    '<button type="button" class="btn-remove-division" data-index="' + index + '" aria-label="Remove">Padam</button>' +
+                    '</div>';
+            }).join('');
+            listEl.querySelectorAll('.btn-edit-division').forEach(btn => {
+                btn.addEventListener('click', () => startEditDivision(parseInt(btn.getAttribute('data-index'), 10)));
+            });
+            listEl.querySelectorAll('.btn-remove-division').forEach(btn => {
+                btn.addEventListener('click', () => removeDivision(parseInt(btn.getAttribute('data-index'), 10)));
+            });
+        }
+
+        function startEditDivision(index) {
+            const name = divisionList[index];
+            const listEl = document.getElementById('divisionsList');
+            const tag = listEl && listEl.querySelector('.division-tag[data-index="' + index + '"]');
+            if (!tag) return;
+            tag.classList.add('editing');
+            const label = tag.querySelector('.division-tag-label');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = name || '';
+            input.className = 'division-edit-input';
+            label.replaceWith(input);
+            input.focus();
+            input.addEventListener('blur', finishEditDivision);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); finishEditDivision(e, index); }
+                if (e.key === 'Escape') { cancelEditDivision(index); }
+            });
+            window._editingDivisionIndex = index;
+        }
+
+        function finishEditDivision(e, index) {
+            index = typeof index === 'number' ? index : window._editingDivisionIndex;
+            if (typeof index !== 'number' || index < 0 || index >= divisionList.length) return;
+            const listEl = document.getElementById('divisionsList');
+            const tag = listEl && listEl.querySelector('.division-tag[data-index="' + index + '"]');
+            const input = tag && tag.querySelector('input.division-edit-input');
+            const newName = (input && input.value || '').trim();
+            tag.classList.remove('editing');
+            if (newName) {
+                divisionList[index] = newName;
+            }
+            renderDivisionsList();
+            window._editingDivisionIndex = undefined;
+        }
+
+        function cancelEditDivision(index) {
+            const listEl = document.getElementById('divisionsList');
+            const tag = listEl && listEl.querySelector('.division-tag[data-index="' + index + '"]');
+            if (tag) tag.classList.remove('editing');
+            renderDivisionsList();
+            window._editingDivisionIndex = undefined;
+        }
+
+        function removeDivision(index) {
+            if (index < 0 || index >= divisionList.length) return;
+            divisionList.splice(index, 1);
+            renderDivisionsList();
+        }
+
+        function addDivision() {
+            const input = document.getElementById('newDivisionInput');
+            const name = (input && input.value || '').trim();
+            if (!name) return;
+            if (divisionList.indexOf(name) !== -1) {
+                showMessage('Bahagian tersebut sudah ada dalam senarai.', 'error');
+                return;
+            }
+            divisionList.push(name);
+            if (input) input.value = '';
+            renderDivisionsList();
+            clearMessage();
+        }
+
+        function saveDivisions() {
+            const saveBtn = document.getElementById('saveDivisionsBtn');
+            if (!saveBtn) return;
+            if (!Array.isArray(divisionList)) {
+                alert('Senarai bahagian tidak sah. Cuba muat semula laman.');
+                return;
+            }
+            const db = getDb();
+            if (!db) {
+                alert('Pangkalan data tidak tersedia. Pastikan Firebase dimuatkan.');
+                saveBtn.disabled = false;
+                return;
+            }
+            saveBtn.disabled = true;
+            clearMessage();
+            db.collection('config').doc('divisions').set({ list: divisionList })
+                .then(() => {
+                    if (typeof clearDivisionListCache === 'function') clearDivisionListCache();
+                    showMessage('Senarai bahagian telah disimpan.');
+                    const section = document.getElementById('divisionsSection');
+                    if (section) section.classList.add('collapsed');
+                    alert('Senarai bahagian telah disimpan. Seksyen senarai bahagian telah diminimumkan. Laman Daftar akan memaparkan senarai baru selepas dimuat semula.');
+                    saveBtn.disabled = false;
+                })
+                .catch((err) => {
+                    console.error('Save divisions error:', err);
+                    showMessage('Gagal menyimpan senarai bahagian.', 'error');
+                    alert('Gagal menyimpan: ' + (err && err.message ? err.message : 'Sila pastikan peraturan Firestore dibenarkan untuk config/divisions dan anda log masuk sebagai admin.'));
+                    saveBtn.disabled = false;
+                });
         }
 
         function loadUsers() {
@@ -380,6 +679,7 @@
                     const data = doc.data() || {};
                     allUsers.push({
                         email,
+                        username: (data.username || '').trim(),
                         division: data.division || '-',
                         role: data.role || 'user',
                         status: data.disabled ? 'disabled' : 'active',
@@ -437,7 +737,8 @@
                 return;
             }
 
-            usersTableBody.innerHTML = visible.map(u => {
+            window._adminVisibleUsers = visible;
+            usersTableBody.innerHTML = visible.map((u, idx) => {
                 const roleClass = u.role === 'admin' ? 'role-admin'
                                 : u.role === 'user' ? 'role-user'
                                 : u.role === 'denied' ? 'role-denied'
@@ -454,9 +755,8 @@
                        <button class="btn-delete" onclick="deleteUser('${emailEsc}','${divisionEsc}')">Padam</button>`
                     : u.role === 'denied'
                     ? `<button class="btn-delete" onclick="deleteUser('${emailEsc}','${divisionEsc}')">Padam</button>`
-                    : `<button class="btn-small-primary" onclick="setRole('${emailEsc}','admin')">Make admin</button>
-                       <button class="btn-small-outline" onclick="setRole('${emailEsc}','user')">Make user</button>
-                       <button class="btn-delete" onclick="deleteUser('${emailEsc}','${divisionEsc}')">Padam</button>`;
+                    : `<button class="btn-small-primary" onclick="openViewUser(${idx})">View</button>
+                       <button class="btn-small-outline" onclick="openEditUser(${idx})">Edit</button>`;
 
                 return `
                     <tr>
@@ -501,7 +801,129 @@
         };
 
         function normalizeDivision(val) {
-            return (val || '').trim().toLowerCase();
+            return (val || '').trim().toLowerCase().replace(/\//g, '_');
+        }
+
+        function openViewUser(idx) {
+            const list = window._adminVisibleUsers;
+            if (!list || idx < 0 || idx >= list.length) return;
+            const u = list[idx];
+            document.getElementById('viewUsername').textContent = (u.username || '').trim() || '—';
+            document.getElementById('viewDivision').textContent = (u.division || '').trim() || '—';
+            document.getElementById('viewEmail').textContent = u.email || '—';
+            document.getElementById('viewRole').textContent = u.role || '—';
+            const modal = document.getElementById('userViewModal');
+            if (modal) { modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false'); }
+        }
+
+        function closeViewModal() {
+            const modal = document.getElementById('userViewModal');
+            if (modal) { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); }
+        }
+
+        function openEditUser(idx) {
+            const list = window._adminVisibleUsers;
+            if (!list || idx < 0 || idx >= list.length) return;
+            const u = list[idx];
+            document.getElementById('editEmail').value = u.email || '';
+            document.getElementById('editEmailDisplay').textContent = u.email || '—';
+            document.getElementById('editUsername').value = (u.username || '').trim();
+            document.getElementById('editDivision').value = (u.division || '').trim();
+            document.getElementById('editPassword').value = '';
+            document.getElementById('editPasswordConfirm').value = '';
+            document.getElementById('editRole').value = (u.role || 'user') === 'admin' ? 'admin' : 'user';
+            const modal = document.getElementById('userEditModal');
+            if (modal) { modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false'); }
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('userEditModal');
+            if (modal) { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); }
+        }
+
+        function saveEditUser() {
+            const email = (document.getElementById('editEmail').value || '').trim().toLowerCase();
+            const username = (document.getElementById('editUsername').value || '').trim();
+            const division = (document.getElementById('editDivision').value || '').trim();
+            const newPassword = (document.getElementById('editPassword').value || '').trim();
+            const newPasswordConfirm = (document.getElementById('editPasswordConfirm').value || '').trim();
+            const role = (document.getElementById('editRole').value || 'user') === 'admin' ? 'admin' : 'user';
+            if (!email) return;
+            if (!username) {
+                showMessage('Username wajib diisi.', 'error');
+                return;
+            }
+            if (newPassword || newPasswordConfirm) {
+                if (newPassword.length < 6) {
+                    showMessage('Kata laluan sekurang-kurangnya 6 aksara.', 'error');
+                    return;
+                }
+                if (newPassword !== newPasswordConfirm) {
+                    showMessage('Sahkan kata laluan tidak sepadan.', 'error');
+                    return;
+                }
+            }
+            const oldUser = allUsers.find(function(x) { return (x.email || '').toLowerCase() === email; });
+            const oldDivision = (oldUser && oldUser.division || '').trim();
+            const oldKey = oldDivision && oldDivision !== '-' ? normalizeDivision(oldDivision) : '';
+            const newKey = division && division !== '-' ? normalizeDivision(division) : '';
+
+            clearMessage();
+            const docRef = db.collection('userRoles').doc(email);
+            const updates = { username: username, division: division, role: role };
+
+            function updateDivisionLookup() {
+                const promises = [];
+                if (oldKey && oldKey !== newKey) {
+                    const oldRef = db.collection('divisionLookup').doc(oldKey);
+                    promises.push(oldRef.get().then(function(snap) {
+                        if (!snap.exists) return;
+                        const data = snap.data() || {};
+                        const emails = Array.isArray(data.emails) ? data.emails : (data.email ? [data.email] : []);
+                        const newEmails = emails.filter(function(e) { return (e || '').toLowerCase() !== email; });
+                        if (newEmails.length === 0) return oldRef.delete();
+                        return oldRef.set({ emails: newEmails });
+                    }));
+                }
+                if (newKey) {
+                    const newRef = db.collection('divisionLookup').doc(newKey);
+                    promises.push(newRef.get().then(function(snap) {
+                        const data = snap.exists ? (snap.data() || {}) : {};
+                        const emails = Array.isArray(data.emails) ? data.emails : (data.email ? [data.email] : []);
+                        const has = emails.some(function(e) { return (e || '').toLowerCase() === email; });
+                        if (!has) return newRef.set({ emails: emails.concat(email) });
+                    }));
+                }
+                return Promise.all(promises);
+            }
+
+            function maybeSetPassword() {
+                if (!newPassword || newPassword.length < 6) return Promise.resolve();
+                const fn = typeof firebase !== 'undefined' && firebase.app && firebase.app().functions('asia-southeast1').httpsCallable('setUserPassword');
+                if (!fn) return Promise.resolve();
+                return fn({ targetUserEmail: email, newPassword: newPassword }).catch(function(err) {
+                    showMessage('Profil disimpan. Kata laluan tidak ditetapkan: ' + (err && err.message ? err.message : 'fungsi tidak tersedia atau sasaran ialah admin.'), 'error');
+                });
+            }
+
+            docRef.set(updates, { merge: true })
+                .then(updateDivisionLookup)
+                .then(maybeSetPassword)
+                .then(function() {
+                    const i = allUsers.findIndex(function(x) { return (x.email || '').toLowerCase() === email; });
+                    if (i !== -1) {
+                        allUsers[i].username = username;
+                        allUsers[i].division = division;
+                        allUsers[i].role = role;
+                    }
+                    showMessage(newPassword ? 'Akaun dan kata laluan dikemas kini.' : 'Akaun dikemas kini.');
+                    closeEditModal();
+                    renderPendingApprovals();
+                    renderUsers();
+                })
+                .catch(function(err) {
+                    showMessage('Gagal menyimpan: ' + (err.message || ''), 'error');
+                });
         }
 
         window.deleteUser = function(email, division) {
@@ -516,11 +938,16 @@
                 .then(() => {
                     if (division && division !== '-' && division.trim()) {
                         const divKey = normalizeDivision(division);
-                        return db.collection('divisionLookup').doc(divKey).get()
+                        const divRef = db.collection('divisionLookup').doc(divKey);
+                        return divRef.get()
                             .then(snap => {
-                                if (snap.exists && (snap.data().email || '').toLowerCase() === email.toLowerCase()) {
-                                    return db.collection('divisionLookup').doc(divKey).delete();
-                                }
+                                if (!snap.exists) return;
+                                const data = snap.data() || {};
+                                const emails = Array.isArray(data.emails) ? data.emails : (data.email ? [data.email] : []);
+                                const emailLower = email.toLowerCase();
+                                const newEmails = emails.filter(e => (e || '').toLowerCase() !== emailLower);
+                                if (newEmails.length === 0) return divRef.delete();
+                                return divRef.set({ emails: newEmails });
                             });
                     }
                 })
@@ -555,13 +982,51 @@
         logoutBtn.addEventListener('click', () => {
             auth.signOut().finally(() => {
                 localStorage.removeItem('userEmail');
-                window.location.href = 'login.html';
+                window.location.href = 'login.html?logout=1';
             });
         });
 
         roleFilter.addEventListener('change', renderUsers);
         searchInput.addEventListener('input', () => {
             renderUsers();
+        });
+
+        const addDivisionBtn = document.getElementById('addDivisionBtn');
+        const saveDivisionsBtn = document.getElementById('saveDivisionsBtn');
+        const newDivisionInput = document.getElementById('newDivisionInput');
+        const divisionsHeader = document.getElementById('divisionsHeader');
+        const divisionsSection = document.getElementById('divisionsSection');
+        if (addDivisionBtn) addDivisionBtn.addEventListener('click', addDivision);
+        if (saveDivisionsBtn) saveDivisionsBtn.addEventListener('click', saveDivisions);
+        if (divisionsHeader && divisionsSection) {
+            divisionsHeader.addEventListener('click', () => {
+                divisionsSection.classList.toggle('collapsed');
+                if (!divisionsSection.classList.contains('collapsed') && !divisionsLoaded) {
+                    divisionsLoaded = true;
+                    loadDivisions();
+                }
+            });
+        }
+        if (newDivisionInput) newDivisionInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); addDivision(); }
+        });
+
+        document.getElementById('userViewModalClose').addEventListener('click', closeViewModal);
+        document.getElementById('userViewModal').addEventListener('click', function(e) { if (e.target === this) closeViewModal(); });
+        document.getElementById('userEditModalClose').addEventListener('click', closeEditModal);
+        document.getElementById('userEditSave').addEventListener('click', saveEditUser);
+        document.getElementById('userEditPadam').addEventListener('click', function() {
+            const email = (document.getElementById('editEmail').value || '').trim();
+            const division = (document.getElementById('editDivision').value || '').trim();
+            if (!email) return;
+            closeEditModal();
+            deleteUser(email, division);
+        });
+        document.getElementById('userEditModal').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            if (document.getElementById('userViewModal').classList.contains('open')) closeViewModal();
+            else if (document.getElementById('userEditModal').classList.contains('open')) closeEditModal();
         });
 
         requireAdmin(onAdminReady);
