@@ -355,6 +355,19 @@
         }
         .quarter-summary-close:hover { background: #3a5cd8; }
 
+        .quarter-select {
+            font: inherit;
+            color: inherit;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 4px 8px;
+            margin-left: 4px;
+            cursor: pointer;
+        }
+        .quarter-select:hover { border-color: #4a6cf7; }
+        .quarter-select:focus { outline: 2px solid #4a6cf7; outline-offset: 2px; }
+
         .activity-lampiran-btn {
             flex-shrink: 0;
             padding: 6px 12px;
@@ -570,8 +583,13 @@
                 <h3>Jumlah Laporan</h3>
                 <div class="stat-number loading" id="statReports">—</div>
             </div>
-            <div class="stat-card stat-card-clickable" id="statThisQuarterCard" role="button" tabindex="0" aria-label="Klik untuk lihat ringkasan laporan suku ini">
-                <h3>Laporan Suku Ini</h3>
+            <div class="stat-card stat-card-clickable" id="statThisQuarterCard" role="button" tabindex="0" aria-label="Klik untuk lihat ringkasan laporan mengikut suku">
+                <h3>Laporan Suku <select id="quarterSelect" class="quarter-select" aria-label="Pilih suku">
+                    <option value="Suku 1">Suku 1</option>
+                    <option value="Suku 2">Suku 2</option>
+                    <option value="Suku 3">Suku 3</option>
+                    <option value="Suku 4">Suku 4</option>
+                </select></h3>
                 <div class="stat-number loading" id="statThisQuarter">—</div>
             </div>
         </div>
@@ -725,6 +743,32 @@
             return 'Suku 4';
         }
 
+        async function updateQuarterStat(quarter) {
+            var ctx = window._dashboardQuarterContext;
+            var statEl = document.getElementById('statThisQuarter');
+            var quarterSelectEl = document.getElementById('quarterSelect');
+            if (!ctx || !statEl || !quarter) return;
+            statEl.classList.add('loading');
+            statEl.textContent = '—';
+            try {
+                var snap = await db.collection('kkpReports').where('quarter', '==', quarter).get();
+                var usersWhoSubmittedSet = {};
+                snap.docs.forEach(function (d) {
+                    var createdBy = (d.data().createdBy || '').toLowerCase();
+                    if (createdBy && !ctx.adminEmails[createdBy]) usersWhoSubmittedSet[createdBy] = true;
+                });
+                var submittedUsers = ctx.userList.filter(function (u) { return usersWhoSubmittedSet[u.email]; });
+                var notSubmittedUsers = ctx.userList.filter(function (u) { return !usersWhoSubmittedSet[u.email]; });
+                window.quarterSummaryData = { quarter: quarter, submitted: submittedUsers, notSubmitted: notSubmittedUsers };
+                statEl.textContent = submittedUsers.length + ' / ' + ctx.userOnlyCount;
+            } catch (e) {
+                console.error('updateQuarterStat error:', e);
+                statEl.textContent = '—';
+                window.quarterSummaryData = { quarter: quarter, submitted: [], notSubmitted: [] };
+            }
+            statEl.classList.remove('loading');
+        }
+
         function relativeTimeMs(ts) {
             if (!ts || !ts.toDate) return '';
             var d = ts.toDate();
@@ -745,10 +789,12 @@
             var statUsersEl = document.getElementById('statUsers');
             var statReportsEl = document.getElementById('statReports');
             var statThisQuarterEl = document.getElementById('statThisQuarter');
+            var quarterSelectEl = document.getElementById('quarterSelect');
             var recentListEl = document.getElementById('recentActivityList');
             if (!statUsersEl || !statReportsEl || !statThisQuarterEl || !recentListEl) return;
 
             var currentQuarter = getCurrentQuarter();
+            if (quarterSelectEl) quarterSelectEl.value = currentQuarter;
 
             function getCount(coll) {
                 return coll.get().then(function (snap) { return snap.size; });
@@ -806,32 +852,36 @@
                 }
 
                 var reportCount = (await db.collection('kkpReports').get()).size;
-                var thisQuarterSnap = await db.collection('kkpReports').where('quarter', '==', currentQuarter).get();
-                var thisQuarterReportCountByUsers = 0;
-                var thisQuarterDivisions = {};
-                thisQuarterSnap.docs.forEach(function (d) {
+                var userList = [];
+                userSnap.docs.forEach(function (d) {
                     var data = d.data();
-                    var createdBy = (data.createdBy || '').toLowerCase();
-                    if (createdBy && !adminEmails[createdBy]) thisQuarterReportCountByUsers++;
-                    var div = (data.division || '').trim();
-                    if (div && userOnlyDivisionsMap[div.toLowerCase()]) {
-                        thisQuarterDivisions[div.toLowerCase()] = userOnlyDivisionsMap[div.toLowerCase()] || div;
-                    }
+                    if ((data.role || '').toLowerCase() !== 'user') return;
+                    var em = (d.id || '').toLowerCase();
+                    userList.push({
+                        email: em,
+                        username: (data.username || '').trim(),
+                        division: (data.division || '').trim()
+                    });
                 });
-                var allDivisions = Object.values(userOnlyDivisionsMap).sort();
-                var submittedDivisions = Object.values(thisQuarterDivisions).sort();
-                var notSubmittedDivisions = allDivisions.filter(function (div) {
-                    return !thisQuarterDivisions[div.toLowerCase()];
+                var thisQuarterSnap = await db.collection('kkpReports').where('quarter', '==', currentQuarter).get();
+                var usersWhoSubmittedSet = {};
+                thisQuarterSnap.docs.forEach(function (d) {
+                    var createdBy = (d.data().createdBy || '').toLowerCase();
+                    if (createdBy && !adminEmails[createdBy]) usersWhoSubmittedSet[createdBy] = true;
                 });
+                var submittedUsers = userList.filter(function (u) { return usersWhoSubmittedSet[u.email]; });
+                var notSubmittedUsers = userList.filter(function (u) { return !usersWhoSubmittedSet[u.email]; });
+                var thisQuarterUsersSubmittedCount = submittedUsers.length;
                 window.quarterSummaryData = {
                     quarter: currentQuarter,
-                    submitted: submittedDivisions,
-                    notSubmitted: notSubmittedDivisions
+                    submitted: submittedUsers,
+                    notSubmitted: notSubmittedUsers
                 };
+                window._dashboardQuarterContext = { userList: userList, adminEmails: adminEmails, userOnlyCount: userOnlyCount };
 
                 statUsersEl.textContent = userCount;
                 statReportsEl.textContent = reportCount;
-                statThisQuarterEl.textContent = thisQuarterReportCountByUsers + ' / ' + userOnlyCount;
+                statThisQuarterEl.textContent = thisQuarterUsersSubmittedCount + ' / ' + userOnlyCount;
                 statUsersEl.classList.remove('loading');
                 statReportsEl.classList.remove('loading');
                 statThisQuarterEl.classList.remove('loading');
@@ -1062,12 +1112,22 @@
             var notSubmittedEl = document.getElementById('quarterSummaryNotSubmitted');
             if (!modal || !titleEl || !submittedEl || !notSubmittedEl) return;
             titleEl.textContent = 'Laporan ' + data.quarter + ' – Ringkasan';
+            function userLine(u) {
+                var name = (u.username || u.email || '—').trim() || '—';
+                var div = (u.division || '—').trim() || '—';
+                return '<li>' + escapeHtml(div) + ' (' + escapeHtml(name) + ')</li>';
+            }
+            function escapeHtml(s) {
+                var div = document.createElement('div');
+                div.textContent = s;
+                return div.innerHTML;
+            }
             submittedEl.innerHTML = data.submitted.length
-                ? data.submitted.map(function (d) { return '<li>' + d + '</li>'; }).join('')
-                : '<li class="quarter-summary-empty">Tiada bahagian yang telah menghantar.</li>';
+                ? data.submitted.map(userLine).join('')
+                : '<li class="quarter-summary-empty">Tiada pengguna yang telah menghantar.</li>';
             notSubmittedEl.innerHTML = data.notSubmitted.length
-                ? data.notSubmitted.map(function (d) { return '<li>' + d + '</li>'; }).join('')
-                : '<li class="quarter-summary-empty">Semua bahagian telah menghantar.</li>';
+                ? data.notSubmitted.map(userLine).join('')
+                : '<li class="quarter-summary-empty">Semua pengguna telah menghantar.</li>';
             modal.style.display = 'block';
             modal.setAttribute('aria-hidden', 'false');
         }
@@ -1079,8 +1139,17 @@
             }
         }
         var statCard = document.getElementById('statThisQuarterCard');
+        var quarterSelectEl = document.getElementById('quarterSelect');
+        if (quarterSelectEl) {
+            quarterSelectEl.addEventListener('click', function (e) { e.stopPropagation(); });
+            quarterSelectEl.addEventListener('change', function () {
+                var q = this.value;
+                if (q) updateQuarterStat(q);
+            });
+        }
         if (statCard) {
-            statCard.addEventListener('click', function () {
+            statCard.addEventListener('click', function (e) {
+                if (e.target.closest && e.target.closest('#quarterSelect')) return;
                 if (window.quarterSummaryData) openQuarterSummaryModal();
             });
             statCard.addEventListener('keydown', function (e) {
