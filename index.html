@@ -1015,7 +1015,13 @@
             var modalEl = document.getElementById('pdfModal');
             var loadingEl = document.getElementById('pdfModalLoading');
             if (titleEl) titleEl.textContent = 'KKP Report - ' + (report.division || '') + ' - ' + (report.quarter || '');
-            if (viewerEl) viewerEl.src = '';
+            if (viewerEl) {
+                if (viewerEl._pdfBlobUrl) {
+                    URL.revokeObjectURL(viewerEl._pdfBlobUrl);
+                    viewerEl._pdfBlobUrl = null;
+                }
+                viewerEl.src = '';
+            }
             if (loadingEl) loadingEl.classList.remove('hidden');
             if (modalEl) modalEl.style.display = 'block';
             try {
@@ -1025,8 +1031,12 @@
                     if (loadingEl) loadingEl.classList.add('hidden');
                     return;
                 }
-                var pdfBase64 = doc.output('datauristring');
-                if (viewerEl) viewerEl.src = pdfBase64;
+                var pdfBlob = doc.output('blob');
+                var blobUrl = URL.createObjectURL(pdfBlob);
+                if (viewerEl) {
+                    viewerEl._pdfBlobUrl = blobUrl;
+                    viewerEl.src = blobUrl;
+                }
                 if (loadingEl) loadingEl.classList.add('hidden');
             } catch (err) {
                 console.error('View PDF error:', err);
@@ -1092,7 +1102,13 @@
             var viewer = document.getElementById('pdfModalViewer');
             var loadingEl = document.getElementById('pdfModalLoading');
             if (modal) modal.style.display = 'none';
-            if (viewer) viewer.src = '';
+            if (viewer) {
+                if (viewer._pdfBlobUrl) {
+                    URL.revokeObjectURL(viewer._pdfBlobUrl);
+                    viewer._pdfBlobUrl = null;
+                }
+                viewer.src = '';
+            }
             if (loadingEl) loadingEl.classList.remove('hidden');
         }
         document.getElementById('pdfModalClose').addEventListener('click', closePdfModal);

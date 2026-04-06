@@ -680,6 +680,12 @@
                         <input type="number" id="sickLeave" name="sickLeave" min="0" required>
                         <input type="number" id="sickLeaveYTD" name="sickLeaveYTD" min="0" required>
                     </div>
+                    
+                    <div class="form-row">
+                        <label for="sickLeaveOccInfectious">3. Jumlah cuti sakit pekerja akibat penyakit berjangkit pekerjaan:</label>
+                        <input type="number" id="sickLeaveOccInfectious" name="sickLeaveOccInfectious" min="0" required>
+                        <input type="number" id="sickLeaveOccInfectiousYTD" name="sickLeaveOccInfectiousYTD" min="0" required>
+                    </div>
                 </div>
             </div>
 
@@ -1216,6 +1222,8 @@
                     totalWorkersYTD: formData.totalWorkersYTD,
                     sickLeave: formData.sickLeave,
                     sickLeaveYTD: formData.sickLeaveYTD,
+                    sickLeaveOccInfectious: formData.sickLeaveOccInfectious,
+                    sickLeaveOccInfectiousYTD: formData.sickLeaveOccInfectiousYTD,
                     deathCases: formData.deathCases,
                     deathCasesYTD: formData.deathCasesYTD,
                     severeAccidents: formData.severeAccidents,
@@ -1293,6 +1301,8 @@
                 totalWorkersYTD: document.getElementById('totalWorkersYTD').value,
                 sickLeave: document.getElementById('sickLeave').value,
                 sickLeaveYTD: document.getElementById('sickLeaveYTD').value,
+                sickLeaveOccInfectious: document.getElementById('sickLeaveOccInfectious').value,
+                sickLeaveOccInfectiousYTD: document.getElementById('sickLeaveOccInfectiousYTD').value,
                 deathCases: document.getElementById('deathCases').value,
                 deathCasesYTD: document.getElementById('deathCasesYTD').value,
                 severeAccidents: document.getElementById('severeAccidents').value,
@@ -1388,6 +1398,8 @@
                 document.getElementById('totalWorkersYTD').value = data.totalWorkersYTD || '';
                 document.getElementById('sickLeave').value = data.sickLeave || '';
                 document.getElementById('sickLeaveYTD').value = data.sickLeaveYTD || '';
+                document.getElementById('sickLeaveOccInfectious').value = data.sickLeaveOccInfectious || '';
+                document.getElementById('sickLeaveOccInfectiousYTD').value = data.sickLeaveOccInfectiousYTD || '';
                 document.getElementById('deathCases').value = data.deathCases || '';
                 document.getElementById('deathCasesYTD').value = data.deathCasesYTD || '';
                 document.getElementById('severeAccidents').value = data.severeAccidents || '';
@@ -1573,7 +1585,8 @@
             yPosition += 6;
             const sectionA = [
                 ["1. Jumlah Bilangan Pekerja", data.totalWorkers, data.totalWorkersYTD],
-                ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD]
+                ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD],
+                ["3. Jumlah cuti sakit pekerja akibat penyakit berjangkit pekerjaan", data.sickLeaveOccInfectious, data.sickLeaveOccInfectiousYTD]
             ];
             doc.autoTable({
                 startY: yPosition,

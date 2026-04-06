@@ -1141,11 +1141,12 @@
             return prefix + abbreviation;
         }
 
-        // Mapping of full headers to their abbreviations (A1 to D6 only)
+        // Mapping of full headers to their abbreviations (Section A A1–A3, B, C, D)
         const headerAbbreviations = {
             // Section A: STATISTIK
             'A1. Jumlah Bilangan Pekerja': 'A1. JBP',
             'A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan': 'A2. JCSPDK',
+            'A3. Jumlah cuti sakit pekerja akibat penyakit berjangkit pekerjaan': 'A3. JCSPPBP',
             
             // Section B: REKOD KES KEMALANGAN
             'B1.1 Kes Kematian': 'B1.1 KK',
@@ -1184,7 +1185,8 @@
             const sections = [
                 { title: 'SEKSYEN A: STATISTIK', items: [
                     'A1. JBP = A1. Jumlah Bilangan Pekerja',
-                    'A2. JCSPDK = A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan'
+                    'A2. JCSPDK = A2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan',
+                    'A3. JCSPPBP = A3. Jumlah cuti sakit pekerja akibat penyakit berjangkit pekerjaan'
                 ]},
                 { title: 'SEKSYEN B: REKOD KES KEMALANGAN', items: [
                     'B1.1 KK = B1.1 Kes Kematian',
@@ -1675,6 +1677,10 @@
 
         function closePdfModal() {
             pdfModal.style.display = 'none';
+            if (pdfViewer._pdfBlobUrl) {
+                URL.revokeObjectURL(pdfViewer._pdfBlobUrl);
+                pdfViewer._pdfBlobUrl = null;
+            }
             pdfViewer.src = '';
             var loadingEl = document.getElementById('pdfModalLoading');
             if (loadingEl) loadingEl.classList.remove('hidden');
@@ -2049,12 +2055,19 @@
             const loadingEl = document.getElementById('pdfModalLoading');
             pdfTitle.textContent = `KKP Report - ${safeGetValue(report.division)} - ${safeGetValue(report.quarter)}`;
             pdfViewer.src = '';
+            if (pdfViewer._pdfBlobUrl) {
+                URL.revokeObjectURL(pdfViewer._pdfBlobUrl);
+                pdfViewer._pdfBlobUrl = null;
+            }
             if (loadingEl) loadingEl.classList.remove('hidden');
             pdfModal.style.display = 'block';
             try {
                 const doc = generatePdfFromReport(report);
-                const pdfBase64 = doc.output('datauristring');
-                pdfViewer.src = pdfBase64;
+                // Chrome/Edge block data: PDF URLs in iframes; blob: URLs work (including file:// pages).
+                const pdfBlob = doc.output('blob');
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                pdfViewer._pdfBlobUrl = blobUrl;
+                pdfViewer.src = blobUrl;
             } catch (err) {
                 console.error('View PDF error:', err);
                 alert('Gagal menjana PDF. Sila cuba lagi.');
@@ -2226,6 +2239,7 @@
                 // Section A: STATISTIK - WITH ABBREVIATIONS
                 'A1. JBP',
                 'A2. JCSPDK',
+                'A3. JCSPPBP',
                 // Section B: REKOD KES KEMALANGAN - WITH ABBREVIATIONS
                 'B1.1 KK',
                 'B1.2 KKP',
@@ -2260,6 +2274,7 @@
                         // Section A - WITH ABBREVIATIONS
                         quarterTotals.totalWorkers,
                         quarterTotals.sickLeave,
+                        quarterTotals.sickLeaveOccInfectious,
                         // Section B - WITH ABBREVIATIONS
                         quarterTotals.deathCases,
                         quarterTotals.severeAccidents,
@@ -2304,6 +2319,8 @@
                 totalWorkersYTD: 0,
                 sickLeave: 0,
                 sickLeaveYTD: 0,
+                sickLeaveOccInfectious: 0,
+                sickLeaveOccInfectiousYTD: 0,
                 // Section B - UPDATED STRUCTURE
                 deathCases: 0,
                 deathCasesYTD: 0,
@@ -2348,6 +2365,8 @@
                 totals.totalWorkersYTD += parseInt(safeGetValue(report.totalWorkersYTD, '0'));
                 totals.sickLeave += parseInt(safeGetValue(report.sickLeave, '0'));
                 totals.sickLeaveYTD += parseInt(safeGetValue(report.sickLeaveYTD, '0'));
+                totals.sickLeaveOccInfectious += parseInt(safeGetValue(report.sickLeaveOccInfectious, '0'));
+                totals.sickLeaveOccInfectiousYTD += parseInt(safeGetValue(report.sickLeaveOccInfectiousYTD, '0'));
                 
                 // Section B - UPDATED STRUCTURE
                 totals.deathCases += parseInt(safeGetValue(report.deathCases, '0'));
@@ -2403,6 +2422,7 @@
             const summaries = {
                 'Jumlah Laporan': reports.length,
                 'Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan': sumField(reports, 'sickLeave'),
+                'Jumlah cuti sakit pekerja akibat penyakit berjangkit pekerjaan': sumField(reports, 'sickLeaveOccInfectious'),
                 'Jumlah Kes Kematian': sumField(reports, 'deathCases'),
                 'Jumlah Kes Kemalangan Parah': sumField(reports, 'severeAccidents'),
                 'Jumlah Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)': sumField(reports, 'medicalCases'),
@@ -2504,6 +2524,7 @@ Fail CSV akan dimuat turun secara automatik.
                 // Section A: STATISTIK - WITH ABBREVIATIONS
                 'A1. JBP',
                 'A2. JCSPDK',
+                'A3. JCSPPBP',
                 // Section B: REKOD KES KEMALANGAN - WITH ABBREVIATIONS
                 'B1.1 KK',
                 'B1.2 KKP',
@@ -2548,6 +2569,7 @@ Fail CSV akan dimuat turun secara automatik.
                     // Section A: WITH ABBREVIATIONS
                     safeGetValue(report.totalWorkers, '0'),
                     safeGetValue(report.sickLeave, '0'),
+                    safeGetValue(report.sickLeaveOccInfectious, '0'),
                     // Section B: WITH ABBREVIATIONS
                     safeGetValue(report.deathCases, '0'),
                     safeGetValue(report.severeAccidents, '0'),
@@ -2736,6 +2758,7 @@ Fail CSV akan dimuat turun secara automatik.
             const summaries = {
                 'Jumlah Laporan': reports.length,
                 'Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan': sumField(reports, 'sickLeave'),
+                'Jumlah cuti sakit pekerja akibat penyakit berjangkit pekerjaan': sumField(reports, 'sickLeaveOccInfectious'),
                 'Jumlah Kes Kematian': sumField(reports, 'deathCases'),
                 'Jumlah Kes Kemalangan Parah': sumField(reports, 'severeAccidents'),
                 'Jumlah Kes Rawatan Perubatan (Cuti Sakit < 5 Hari)': sumField(reports, 'medicalCases'),

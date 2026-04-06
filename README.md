@@ -49,33 +49,13 @@ Example document:
 
 ### 4. Firestore Security Rules (Recommended)
 
-Example rules for authenticated users, role-based `userRoles`, and division-based login:
+**Deploy the real rules:** Copy the entire **`firestore.rules`** file from this repository into Firebase Console → Firestore → **Rules**, then **Publish**. Do not use an older snippet; the file matches the app (division-scoped reports, profile username, admin panel, audit log, etc.).
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /kkpReports/{reportId} {
-      allow read, write: if request.auth != null;
-    }
-    match /userRoles/{email} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.token.email == email;
-      allow update, delete: if request.auth != null &&
-        get(/databases/$(database)/documents/userRoles/$(request.auth.token.email)).data.role == 'admin';
-    }
-    match /divisionLookup/{division} {
-      allow get: if true;
-      allow list: if false;
-      allow create, update, delete: if request.auth != null;
-    }
-  }
-}
-```
+Summary of what `firestore.rules` enforces:
 
-- **kkpReports**: Authenticated users can read/write reports.
-- **userRoles**: Authenticated users can read; users create their own doc; only admins can update/delete.
-- **divisionLookup**: Anyone can `get` a single doc by division (needed for login lookup). No `list` (prevents enumeration). Authenticated users can create/update/delete only their own entry (email must match).
+- **kkpReports**: Authenticated users read/write only where division access matches their role (admins see all).
+- **userRoles**: Authenticated users can read; each user can create their own doc; **every user can update their own doc to change `username` (and similar) as long as `role` and `division` stay unchanged**—so admins and everyone else can fix typos on **Profil** without help; admins can still update any user; denied users can re-apply; only admins can delete.
+- **divisionLookup**: Anyone can `get` a single doc by division (needed for login lookup). No `list` (prevents enumeration). Authenticated users can create/update/delete (see file for details).
 
 - **auditLog**: Only admins can read; only admins can create (role changes are logged). No update/delete.
 
@@ -96,6 +76,7 @@ Stores only structured form data. **No PDF is stored**; PDFs are generated on de
 | reportDate | string | Tarikh Laporan (YYYY-MM-DD) |
 | totalWorkers, totalWorkersYTD | string/number | Section A |
 | sickLeave, sickLeaveYTD | string/number | Section A |
+| sickLeaveOccInfectious, sickLeaveOccInfectiousYTD | string/number | Section A (cuti sakit — penyakit berjangkit pekerjaan) |
 | deathCases, deathCasesYTD | string/number | Section B |
 | severeAccidents, severeAccidentsYTD | string/number | Section B |
 | medicalCases, medicalCasesYTD | string/number | Section B |

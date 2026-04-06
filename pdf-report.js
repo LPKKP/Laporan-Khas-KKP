@@ -58,7 +58,8 @@
         yPosition += 6;
         var sectionA = [
             ["1. Jumlah Bilangan Pekerja", data.totalWorkers, data.totalWorkersYTD],
-            ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD]
+            ["2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan", data.sickLeave, data.sickLeaveYTD],
+            ["3. Jumlah cuti sakit pekerja akibat penyakit berjangkit pekerjaan", data.sickLeaveOccInfectious, data.sickLeaveOccInfectiousYTD]
         ];
         doc.autoTable({
             startY: yPosition,
