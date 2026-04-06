@@ -573,15 +573,83 @@
         }
         
         @media (max-width: 768px) {
+            .info-group {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            .info-group .form-group {
+                flex: 1 1 calc(50% - 6px);
+                min-width: 0;
+            }
+            .info-group .form-group:nth-child(3) {
+                flex-basis: 100%;
+            }
             .form-grid {
                 grid-template-columns: 1fr;
                 gap: 12px;
             }
             .grid-header { display: none; }
             .form-row label { padding: 4px 0; }
+            .form-cell {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .form-cell::before {
+                content: attr(data-label);
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.02em;
+                color: #4a6cf7;
+                text-transform: uppercase;
+            }
             .form-row input, .form-row select {
                 text-align: left;
                 padding: 10px 12px;
+            }
+            /* Lampiran / Attachments: neater stacked layout on mobile */
+            .image-slot {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .image-slot .slot-label {
+                min-width: 0;
+                font-size: 13px;
+            }
+            .image-slot .slot-thumb {
+                width: 100%;
+                height: 160px;
+                border-radius: 6px;
+            }
+            .image-slot .slot-body {
+                width: 100%;
+                gap: 10px;
+            }
+            .image-slot .slot-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .image-slot .file-input-wrap {
+                width: 100%;
+                min-width: 0;
+                min-height: 44px;
+            }
+            .image-slot .file-input-wrap .btn-notice {
+                width: 100%;
+                justify-content: center;
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+            .btn-slot-remove {
+                width: 100%;
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+            .image-slot .slot-body input[type="text"] {
+                padding: 10px 12px;
+                font-size: 13px;
             }
             .sub-section-title { grid-column: 1; }
             .header h1 { font-size: 14px; line-height: 1.4; }
@@ -671,20 +739,32 @@
                     
                     <div class="form-row">
                         <label for="totalWorkers">1. Jumlah Bilangan Pekerja:</label>
-                        <input type="number" id="totalWorkers" name="totalWorkers" min="0" required>
-                        <input type="number" id="totalWorkersYTD" name="totalWorkersYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan">
+                            <input type="number" id="totalWorkers" name="totalWorkers" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Tahun Ini">
+                            <input type="number" id="totalWorkersYTD" name="totalWorkersYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="sickLeave">2. Jumlah Cuti Sakit Pekerja Disebabkan Kemalangan:</label>
-                        <input type="number" id="sickLeave" name="sickLeave" min="0" required>
-                        <input type="number" id="sickLeaveYTD" name="sickLeaveYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan">
+                            <input type="number" id="sickLeave" name="sickLeave" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Tahun Ini">
+                            <input type="number" id="sickLeaveYTD" name="sickLeaveYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="sickLeaveOccInfectious">3. Jumlah cuti sakit pekerja akibat penyakit berjangkit pekerjaan:</label>
-                        <input type="number" id="sickLeaveOccInfectious" name="sickLeaveOccInfectious" min="0" required>
-                        <input type="number" id="sickLeaveOccInfectiousYTD" name="sickLeaveOccInfectiousYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan">
+                            <input type="number" id="sickLeaveOccInfectious" name="sickLeaveOccInfectious" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Tahun Ini">
+                            <input type="number" id="sickLeaveOccInfectiousYTD" name="sickLeaveOccInfectiousYTD" min="0" required>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -702,14 +782,22 @@
                     
                     <div class="form-row">
                         <label for="deathCases">1.1 Kes Kematian:</label>
-                        <input type="number" id="deathCases" name="deathCases" min="0" required>
-                        <input type="number" id="deathCasesYTD" name="deathCasesYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="deathCases" name="deathCases" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="deathCasesYTD" name="deathCasesYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="severeAccidents">1.2 Kes Kemalangan Parah (Cuti Sakit ≥ 5 Hari):</label>
-                        <input type="number" id="severeAccidents" name="severeAccidents" min="0" required>
-                        <input type="number" id="severeAccidentsYTD" name="severeAccidentsYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="severeAccidents" name="severeAccidents" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="severeAccidentsYTD" name="severeAccidentsYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
@@ -718,14 +806,22 @@
                     
                     <div class="form-row">
                         <label for="medicalCases">2.1 Kes Rawatan Perubatan (Cuti Sakit < 5 Hari):</label>
-                        <input type="number" id="medicalCases" name="medicalCases" min="0" required>
-                        <input type="number" id="medicalCasesYTD" name="medicalCasesYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="medicalCases" name="medicalCases" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="medicalCasesYTD" name="medicalCasesYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="firstAidCases">2.2 Kes Rawatan Kecil (First Aid):</label>
-                        <input type="number" id="firstAidCases" name="firstAidCases" min="0" required>
-                        <input type="number" id="firstAidCasesYTD" name="firstAidCasesYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="firstAidCases" name="firstAidCases" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="firstAidCasesYTD" name="firstAidCasesYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
@@ -734,26 +830,42 @@
                     
                     <div class="form-row">
                         <label for="fireCases">3.1 Kes Kebakaran:</label>
-                        <input type="number" id="fireCases" name="fireCases" min="0" required>
-                        <input type="number" id="fireCasesYTD" name="fireCasesYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="fireCases" name="fireCases" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="fireCasesYTD" name="fireCasesYTD" min="0" required>
+                        </div>
                     </div>
                 
                     <div class="form-row">
                         <label for="propertyDamage">3.2 Kes Kerosakan Harta Benda:</label>
-                        <input type="number" id="propertyDamage" name="propertyDamage" min="0" required>
-                        <input type="number" id="propertyDamageYTD" name="propertyDamageYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="propertyDamage" name="propertyDamage" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="propertyDamageYTD" name="propertyDamageYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="nearMiss">3.3 Kes Kejadian Hampir (Near Miss):</label>
-                        <input type="number" id="nearMiss" name="nearMiss" min="0" required>
-                        <input type="number" id="nearMissYTD" name="nearMissYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="nearMiss" name="nearMiss" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="nearMissYTD" name="nearMissYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="otherIncidents">3.4 Lain-lain insiden:</label>
-                        <input type="number" id="otherIncidents" name="otherIncidents" min="0" required>
-                        <input type="number" id="otherIncidentsYTD" name="otherIncidentsYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="otherIncidents" name="otherIncidents" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="otherIncidentsYTD" name="otherIncidentsYTD" min="0" required>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -767,14 +879,22 @@
                     
                     <div class="form-row">
                         <label for="occupationalDisease">1. Kes Penyakit Pekerjaan:</label>
-                        <input type="number" id="occupationalDisease" name="occupationalDisease" min="0" required>
-                        <input type="number" id="occupationalDiseaseYTD" name="occupationalDiseaseYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="occupationalDisease" name="occupationalDisease" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="occupationalDiseaseYTD" name="occupationalDiseaseYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="infectiousDisease">2. Kes Penyakit Berjangkit:</label>
-                        <input type="number" id="infectiousDisease" name="infectiousDisease" min="0" required>
-                        <input type="number" id="infectiousDiseaseYTD" name="infectiousDiseaseYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan Kes">
+                            <input type="number" id="infectiousDisease" name="infectiousDisease" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Kes Tahun Ini">
+                            <input type="number" id="infectiousDiseaseYTD" name="infectiousDiseaseYTD" min="0" required>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -788,38 +908,62 @@
                     
                     <div class="form-row">
                         <label for="meetings">1. Jumlah Mesyuarat KKP:</label>
-                        <input type="number" id="meetings" name="meetings" min="0" required>
-                        <input type="number" id="meetingsYTD" name="meetingsYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan">
+                            <input type="number" id="meetings" name="meetings" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Tahun Ini">
+                            <input type="number" id="meetingsYTD" name="meetingsYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="trainings">2. Jumlah Latihan KKP:</label>
-                        <input type="number" id="trainings" name="trainings" min="0" required>
-                        <input type="number" id="trainingsYTD" name='trainingsYTD' min="0" required>
+                        <div class="form-cell" data-label="Bilangan">
+                            <input type="number" id="trainings" name="trainings" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Tahun Ini">
+                            <input type="number" id="trainingsYTD" name='trainingsYTD' min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="briefings">3. Jumlah Taklimat/Toolbox:</label>
-                        <input type="number" id="briefings" name="briefings" min="0" required>
-                        <input type="number" id="briefingsYTD" name="briefingsYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan">
+                            <input type="number" id="briefings" name="briefings" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Tahun Ini">
+                            <input type="number" id="briefingsYTD" name="briefingsYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="inspections">4. Jumlah Pemeriksaan KKP (Pemeriksaan Dalaman & Luaran):</label>
-                        <input type="number" id="inspections" name="inspections" min="0" required>
-                        <input type="number" id="inspectionsYTD" name="inspectionsYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan">
+                            <input type="number" id="inspections" name="inspections" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Tahun Ini">
+                            <input type="number" id="inspectionsYTD" name="inspectionsYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="uauc">5. Pelaporan Unsafe Act Unsafe Condition (UAUC):</label>
-                        <input type="number" id="uauc" name="uauc" min="0" required>
-                        <input type="number" id="uaucYTD" name="uaucYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan">
+                            <input type="number" id="uauc" name="uauc" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Tahun Ini">
+                            <input type="number" id="uaucYTD" name="uaucYTD" min="0" required>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <label for="otherActivities">6. Lain-lain (Contohnya, Kempen atau Promosi Berkaitan KKP):</label>
-                        <input type="number" id="otherActivities" name="otherActivities" min="0" required>
-                        <input type="number" id="otherActivitiesYTD" name="otherActivitiesYTD" min="0" required>
+                        <div class="form-cell" data-label="Bilangan">
+                            <input type="number" id="otherActivities" name="otherActivities" min="0" required>
+                        </div>
+                        <div class="form-cell" data-label="Bilangan Tahun Ini">
+                            <input type="number" id="otherActivitiesYTD" name="otherActivitiesYTD" min="0" required>
+                        </div>
                     </div>
                 </div>
             </div>
